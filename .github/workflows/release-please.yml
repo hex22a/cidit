@@ -20,6 +20,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
     outputs:
       release_created: ${{ steps.rp.outputs.release_created }}
+      tag_name: ${{ steps.rp.outputs.tag_name }}
 
   binaries:
     needs: release
@@ -54,11 +55,11 @@ jobs:
           mkdir -p release/${TARGET}
           cp target/$TARGET/release/cidit release/${TARGET}/
           ls -la release
-          tar -czf cidit-${{ github.ref_name }}-${TARGET}.tar.gz -C release/${TARGET} cidit
+          tar -czf cidit-${{ needs.release.outputs.tag_name }}-${TARGET}.tar.gz -C release/${TARGET} cidit
           ls -la
         if: ${{ needs.release.outputs.release_created == 'true' }}
       - name: Upload to release
-        run: gh release upload "$GITHUB_REF_NAME" cidit-*.tar.gz --clobber
+        run: gh release upload ${{ needs.release.outputs.tag_name }} cidit-*.tar.gz --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         if: ${{ needs.release.outputs.release_created == 'true' }}
