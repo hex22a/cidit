@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.9](https://github.com/hex22a/cidit/compare/v0.0.8...v0.0.9) (2026-01-28)
+
+
+### Miscellaneous Chores
+
+* release 0.0.9 ([319fc64](https://github.com/hex22a/cidit/commit/319fc64d7f60862a05ccd08e95d72578c70b8484))
+
 ## [0.0.8](https://github.com/hex22a/cidit/compare/v0.0.7...v0.0.8) (2026-01-28)
 
 
