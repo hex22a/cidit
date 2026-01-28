@@ -1,0 +1,15 @@
+[package]
+name = "cidit"
+version = "0.0.1"
+authors = ["Albert Fazullin <hex22a@gmail.com>"]
+license = "MIT"
+description = "CIDR Inspection Tool"
+repository = "https://github.com/hex22a/cidit"
+edition = "2024"
+
+[dependencies]
+clap = { version = "4.5.54", features = ["derive"] }
+
+[[bin]]
+name = "cidit"
+path = "src/main.rs"
