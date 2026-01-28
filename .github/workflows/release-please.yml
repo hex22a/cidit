@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  release-please:
+  release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -14,6 +14,44 @@ jobs:
 
     steps:
       - uses: googleapis/release-please-action@v4
+        id: rp
         with:
           release-type: 'rust'
           token: ${{ secrets.GITHUB_TOKEN }}
+    outputs:
+      release_created: ${{ steps.rp.outputs.release_created }}
+
+  binaries:
+    needs: release
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ macos-latest, ubuntu-latest, windows-latest ]
+        arch: [ x86_64, aarch64 ]
+
+    steps:
+      - uses: actions/checkout@v6
+        if: ${{ needs.release.outputs.release_created == 'true' }}
+      - name: Build artefacts
+        run: |
+          TARGET=$([[ "${{ matrix.os }}" == "ubuntu-latest" ]] && echo "${{ matrix.arch }}-unknown-linux-gnu" || [[ "${{ matrix.os }}" == "windows-latest" ]] && echo "${{ matrix.arch }}-pc-windows-msvc" || echo "${{ matrix.arch }}-apple-darwin")
+          cargo build --release --target $TARGET
+          mkdir -p release/${TARGET}
+          cp target/$TARGET/release/cidit release/${TARGET}/
+          tar -czf cidit-${{ matrix.os }}-${{ matrix.arch }}.tar.gz -C release/${TARGET} cidit
+          ls -la
+        if: ${{ needs.release.outputs.release_created == 'true' }}
+
+  crates:
+    needs: release
+    runs-on: ubuntu-latest
+    environment: crates.io
+
+    steps:
+      - uses: actions/checkout@v6
+        if: ${{ needs.release.outputs.release_created == 'true' }}
+      - name: Publish on crates.io
+        run: cargo publish
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_TOKEN }}
+        if: ${{ needs.release.outputs.release_created == 'true' }}
