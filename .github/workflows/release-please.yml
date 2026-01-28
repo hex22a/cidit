@@ -54,9 +54,7 @@ jobs:
           cargo build --release --target $TARGET
           mkdir -p release/${TARGET}
           cp target/$TARGET/release/cidit release/${TARGET}/
-          ls -la release
           tar -czf cidit-${{ needs.release.outputs.tag_name }}-${TARGET}.tar.gz -C release/${TARGET} cidit
-          ls -la
         if: ${{ needs.release.outputs.release_created == 'true' }}
       - name: Upload to release
         run: gh release upload ${{ needs.release.outputs.tag_name }} cidit-*.tar.gz --clobber
