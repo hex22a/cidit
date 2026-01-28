@@ -33,8 +33,17 @@ jobs:
       - uses: actions/checkout@v6
         if: ${{ needs.release.outputs.release_created == 'true' }}
       - name: Build artefacts
+        shell: bash
         run: |
-          TARGET=$([[ "${{ matrix.os }}" == "ubuntu-latest" ]] && echo "${{ matrix.arch }}-unknown-linux-gnu" || [[ "${{ matrix.os }}" == "windows-latest" ]] && echo "${{ matrix.arch }}-pc-windows-msvc" || echo "${{ matrix.arch }}-apple-darwin")
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            TARGET="${{ matrix.arch }}-unknown-linux-gnu"
+          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            TARGET="${{ matrix.arch }}-pc-windows-msvc"
+          else
+            TARGET="${{ matrix.arch }}-apple-darwin"
+          fi
+          echo TARGET=$TARGET
+          rustup target add $TARGET
           cargo build --release --target $TARGET
           mkdir -p release/${TARGET}
           cp target/$TARGET/release/cidit release/${TARGET}/
