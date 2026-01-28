@@ -7,7 +7,7 @@ on:
 
 jobs:
   release:
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
@@ -23,11 +23,12 @@ jobs:
 
   binaries:
     needs: release
-    runs-on: ubuntu-latest
     strategy:
       matrix:
         os: [ macos-latest, ubuntu-latest, windows-latest ]
         arch: [ x86_64, aarch64 ]
+
+    runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v6
