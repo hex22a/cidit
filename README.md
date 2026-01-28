@@ -16,7 +16,15 @@ or [here](https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing).
 
 ### Install binary
 
-*TBD*
+With [Homebrew](https://brew.sh/) (recommended)
+
+```shell
+brew tap hex22a/cidit
+```
+
+```shell
+brew install cidit
+```
 
 ### Compile from sources
 
