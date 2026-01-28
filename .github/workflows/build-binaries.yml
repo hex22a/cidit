@@ -2,7 +2,7 @@ name: Build Binaries
 on:
   push:
     tags:
-      - v?\d+.\d+.\d+
+      - v*.*.*
 jobs:
   Build-And-Release:
     runs-on: ubuntu-latest
