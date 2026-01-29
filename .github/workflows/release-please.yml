@@ -67,6 +67,7 @@ jobs:
       - binaries
       - release
     runs-on: ubuntu-latest
+    environment: brew-tap
     if: ${{ needs.release.outputs.release_created == 'true' }}
 
     steps:
@@ -78,7 +79,7 @@ jobs:
       - name: Download Release assets
         run: gh release download ${{ needs.release.outputs.tag_name }} -R hex22a/cidit -p cidit-*.tar.gz
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
       - name: Generate Formula
         run: |
           VERSION=${{ needs.release.outputs.tag_name }}
