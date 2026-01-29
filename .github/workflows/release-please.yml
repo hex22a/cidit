@@ -76,10 +76,11 @@ jobs:
         with:
           repository: 'hex22a/homebrew-cidit'
           path: tap
+          token: '${{ github.GH_PAT }}'
       - name: Download Release assets
         run: gh release download ${{ needs.release.outputs.tag_name }} -R hex22a/cidit -p cidit-*.tar.gz
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Generate Formula
         run: |
           VERSION=${{ needs.release.outputs.tag_name }}
