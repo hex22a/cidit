@@ -1,6 +1,7 @@
 use std::str::FromStr;
 use crate::inspector::InspectionResult;
 use crate::inspector::ipv4::{HumanReadable, Inspectable};
+use crate::ip::ipv4::CidrParseError::InvalidCidr;
 
 #[derive(Debug, PartialEq)]
 pub enum IpParseError {
@@ -78,12 +79,14 @@ impl FromStr for Ipv4Cidr {
     type Err = CidrParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (ip, prefix) = s.split_once('/').unwrap();
+        let (ip_str, prefix) = s.split_once('/').ok_or(CidrParseError::InvalidFormat)?;
+        let ip: IPv4 = ip_str.parse::<IPv4>().map_err(|_| InvalidCidr)?;
+        let prefix: u8 = prefix.parse::<u8>().map_err(|_| InvalidCidr)?;
         let cidr_parts: Ipv4CidrParts = Ipv4CidrParts {
-            address: ip.parse::<IPv4>().unwrap().address,
-            prefix: prefix.parse::<u8>().unwrap(),
+            address: ip.address,
+            prefix,
         };
-        Ok(Self::try_from(cidr_parts).unwrap())
+        Ok(Self::try_from(cidr_parts).map_err(|_| InvalidCidr)?)
     }
 }
 
@@ -98,7 +101,7 @@ impl Inspectable for Ipv4Cidr {
         self.ip.address & self.mask.address
     }
 
-    fn inspect(&self) -> crate::inspector::InspectionResult {
+    fn inspect(&self) -> InspectionResult {
         let subnet_address = self.get_subnet_address();
         let first_usable_ip = subnet_address + 1;
         let broadcast_address = subnet_address + (!0u32 >> self.prefix);
@@ -119,7 +122,8 @@ impl Inspectable for Ipv4Cidr {
 mod tests {
     use crate::inspector::InspectionResult;
     use crate::inspector::ipv4::{HumanReadable, Inspectable};
-    use super::{CidrPartsError, IpParseError, Ipv4Cidr, Ipv4CidrParts};
+    use crate::ip::ipv4::CidrParseError::InvalidCidr;
+    use super::{CidrParseError, CidrPartsError, IpParseError, Ipv4Cidr, Ipv4CidrParts};
     use super::IPv4;
 
     const EXPECTED_BINARY_ADDRESS: u32 = 0b00001010_00010110_10000111_10010000;
@@ -224,6 +228,31 @@ mod tests {
 
         // Assert
         assert_eq!(actual_cidr, expected_cidr);
+    }
+
+    #[test]
+    fn test_parse_ipv4_cidr_invalid_format() {
+        // Arrange
+
+        // Act
+        let actual_result: Result<Ipv4Cidr, CidrParseError> = EXPECTED_IPV4_STR.parse();
+
+        // Assert
+        assert_eq!(actual_result, Err(CidrParseError::InvalidFormat));
+    }
+
+    #[test]
+    fn test_parse_ipv4_cidr_invalid_cidr_invalid_ip() {
+        // Arrange
+        let expected_prefix: u8 = 24;
+        let expected_invalid_ip = "192.168.not_a_number.1";
+        let expected_cidr_string: String = format!("{expected_invalid_ip}/{expected_prefix}");
+
+        // Act
+        let actual_result: Result<Ipv4Cidr, CidrParseError> = expected_cidr_string.parse();
+
+        // Assert
+        assert_eq!(actual_result, Err(InvalidCidr));
     }
 
     #[test]
