@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.0.0](https://github.com/hex22a/cidit/compare/v0.0.22...v1.0.0) (2026-01-31)
+
+
+### ⚠ BREAKING CHANGES
+
+* json output
+
+### Features
+
+* added table output as default option ([65387e2](https://github.com/hex22a/cidit/commit/65387e29fdbc8f2a32ccc57651d3760d571b4a08))
+* json output ([c22c991](https://github.com/hex22a/cidit/commit/c22c99186fb3b6c3b2e8701f5ac8e5bf495b6b83))
+
 ## [0.0.22](https://github.com/hex22a/cidit/compare/v0.0.21...v0.0.22) (2026-01-29)
 
 
