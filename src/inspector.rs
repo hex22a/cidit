@@ -16,7 +16,7 @@ pub(crate) struct InspectionResult {
 pub fn print_table(result: &InspectionResult) {
     let mut binding = Table::new(vec![result]);
     let table = binding
-        .with(Style::blank()); // 👈 без рамок
+        .with(Style::blank());
 
     println!("{table}");
 }
