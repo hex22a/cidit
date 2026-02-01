@@ -116,6 +116,10 @@ jobs:
             def install
               bin.install "cidit"
             end
+            
+            test do
+              assert_match "cidit", shell_output("#{bin}/cidit --help")
+            end
           end
           EOF
       - name: Commit and push Formula
