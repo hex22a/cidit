@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.0](https://github.com/hex22a/cidit/compare/v1.0.0...v2.0.0) (2026-02-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* Allow multiple CIDRs. Add JSON output versioning. Prettify output for JSON. Introduce headless mode for table output
+
+### Features
+
+* Allow multiple CIDRs. Add JSON output versioning. Prettify output for JSON. Introduce headless mode for table output ([592cb72](https://github.com/hex22a/cidit/commit/592cb72a45d07db171b0478615b58bd5bbf0cf14))
+
 ## [1.0.0](https://github.com/hex22a/cidit/compare/v0.0.22...v1.0.0) (2026-01-31)
 
 
