@@ -2,6 +2,9 @@
 
 Calculate Network Ranges for a given CIDR.
 
+![Crates.io Version](https://img.shields.io/crates/v/cidit)
+![CI](https://github.com/hex22a/cidit/actions/workflows/test.yml/badge.svg)
+
 For example, `cidit 10.122.33.44/24` prints out the following information:
 
 ```
