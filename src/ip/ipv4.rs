@@ -37,6 +37,10 @@ pub struct Ipv4CidrParts {
     prefix: u8,
 }
 
+trait Subnet {
+    fn get_subnet_address(&self) -> u32;
+}
+
 impl From<u32> for IPv4 {
     fn from(address: u32) -> IPv4 {
         IPv4 { address }
@@ -96,11 +100,13 @@ impl HumanReadable for IPv4 {
     }
 }
 
-impl Inspectable for Ipv4Cidr {
+impl Subnet for Ipv4Cidr {
     fn get_subnet_address(&self) -> u32 {
         self.ip.address & self.mask.address
     }
+}
 
+impl Inspectable for Ipv4Cidr {
     fn inspect(&self) -> InspectionResult {
         let subnet_address = self.get_subnet_address();
         let first_usable_ip = subnet_address + 1;
@@ -124,6 +130,7 @@ mod tests {
     use crate::inspector::ipv4::{HumanReadable, Inspectable};
     use crate::ip::ipv4::CidrParseError::InvalidCidr;
     use super::{CidrParseError, CidrPartsError, IpParseError, Ipv4Cidr, Ipv4CidrParts};
+    use super::Subnet;
     use super::IPv4;
 
     const EXPECTED_BINARY_ADDRESS: u32 = 0b00001010_00010110_10000111_10010000;
