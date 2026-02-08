@@ -1,6 +1,6 @@
 use std::str::FromStr;
 use crate::inspector::InspectionResult;
-use crate::inspector::ipv4::{Inspectable, HumanReadable};
+use crate::inspector::ipv4::Inspectable;
 use crate::ip::ipv4::IPv4;
 
 #[derive(Debug, PartialEq)]
@@ -67,11 +67,11 @@ impl Subnet for Ipv4Cidr {
 }
 
 impl Ipv4Cidr {
-    pub(crate) fn prefix(&self) -> u8 {
+    pub(crate) fn prefix_len(&self) -> u8 {
         self.prefix.clone()
     }
 
-    pub(crate) fn network(&self) -> IPv4 {
+    pub(crate) fn addr(&self) -> IPv4 {
         self.ip
     }
 }
@@ -82,14 +82,14 @@ impl Inspectable for Ipv4Cidr {
         let first_usable_ip = subnet_address + 1;
         let broadcast_address = subnet_address + (!0u32 >> self.prefix);
         let last_usable_ip = broadcast_address - 1;
-        let human_readable_ip_part = self.ip.human_readable();
+        let human_readable_ip_part = self.ip.to_string();
         let prefix = self.prefix;
         InspectionResult {
             cidr: format!("{human_readable_ip_part}/{prefix}"),
-            first_usable: IPv4::from(first_usable_ip).human_readable(),
-            last_usable: IPv4::from(last_usable_ip).human_readable(),
-            subnet: IPv4::from(subnet_address).human_readable(),
-            broadcast: IPv4::from(broadcast_address).human_readable()
+            first_usable: IPv4::from(first_usable_ip).to_string(),
+            last_usable: IPv4::from(last_usable_ip).to_string(),
+            subnet: IPv4::from(subnet_address).to_string(),
+            broadcast: IPv4::from(broadcast_address).to_string()
         }
     }
 }

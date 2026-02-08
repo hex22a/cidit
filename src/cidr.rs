@@ -28,7 +28,6 @@ impl FromStr for Cidr {
 #[cfg(test)]
 mod tests {
     use super::Cidr;
-    use crate::inspector::ipv4::HumanReadable;
 
     const EXPECTED_IPV4_PREFIX: u8 = 24;
     const EXPECTED_IPV6_PREFIX: u8 = 24;
@@ -48,8 +47,8 @@ mod tests {
         // Assert
         match actual_net {
             Cidr::V4(cidr) => {
-                assert_eq!(cidr.prefix(), EXPECTED_IPV4_PREFIX);
-                assert_eq!(cidr.network().human_readable(), EXPECTED_IPV4_STR);
+                assert_eq!(cidr.prefix_len(), EXPECTED_IPV4_PREFIX);
+                assert_eq!(cidr.addr().to_string(), EXPECTED_IPV4_STR);
             },
             _ => panic!("Expected Cidr::V4")
         }

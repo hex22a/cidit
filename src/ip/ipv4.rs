@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use crate::inspector::ipv4::HumanReadable;
+use std::fmt::Display;
 
 #[derive(Debug, PartialEq)]
 pub enum IpParseError {
@@ -35,15 +35,15 @@ impl FromStr for IPv4 {
     }
 }
 
-impl HumanReadable for IPv4 {
-    fn human_readable(&self) -> String {
-        self.address.to_be_bytes().iter().map(|byte| format!("{}", byte)).collect::<Vec<_>>().join(".")
+impl Display for IPv4 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let bytes = self.address.to_be_bytes();
+        write!(f, "{}.{}.{}.{}", bytes[0], bytes[1], bytes[2], bytes[3])
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::inspector::ipv4::HumanReadable;
     use super::IpParseError;
     use super::IPv4;
 
@@ -105,7 +105,7 @@ mod tests {
         };
 
         // Act
-        let actual_human_readable_address: String = expected_ipv4.human_readable();
+        let actual_human_readable_address: String = expected_ipv4.to_string();
 
         // Assert
         assert_eq!(actual_human_readable_address, EXPECTED_IPV4_STR.to_string());
