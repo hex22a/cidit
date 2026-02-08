@@ -1,10 +1,11 @@
 mod ip;
 mod inspector;
+mod cidr;
 
 use clap::{Parser, ValueEnum};
 use crate::inspector::InspectionResult;
 use crate::inspector::ipv4::Inspectable;
-use crate::ip::ipv4::Ipv4Cidr;
+use crate::cidr::ipv4::Ipv4Cidr;
 
 #[derive(ValueEnum, Clone, Debug)]
 enum OutputFormat {
