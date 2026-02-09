@@ -1,17 +1,23 @@
 use std::str::FromStr;
+use thiserror::Error;
 use crate::inspector::InspectionResult;
 use crate::inspector::ipv4::Inspectable;
 use crate::ip::ipv4::IPv4;
 
-#[derive(Debug, PartialEq)]
+const MAX_CIDR_PREFIX_LEN: u8 = 32;
+
+#[derive(Debug, Error, PartialEq)]
 pub enum CidrParseError {
+    #[error("Invalid CIDR format (expected x.x.x.x/x)")]
     InvalidFormat,
+    #[error("Invalid CIDR")]
     InvalidCidr,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Error, PartialEq)]
 pub enum CidrPartsError {
-    InvalidPrefix,
+    #[error("Invalid CIDR prefix: {0} (expected <= {max} )", max = MAX_CIDR_PREFIX_LEN)]
+    InvalidPrefix(u8),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -34,12 +40,12 @@ impl TryFrom<Ipv4CidrParts> for Ipv4Cidr {
     type Error = CidrPartsError;
 
     fn try_from(value: Ipv4CidrParts) -> Result<Self, Self::Error> {
-        if value.prefix > 32 {
-            return Err(CidrPartsError::InvalidPrefix)
+        if value.prefix > MAX_CIDR_PREFIX_LEN {
+            return Err(CidrPartsError::InvalidPrefix(value.prefix))
         }
         Ok( Self {
             ip: IPv4::from(value.address),
-            mask: IPv4::from(!0u32 << (32 - value.prefix)),
+            mask: IPv4::from(!0u32 << (MAX_CIDR_PREFIX_LEN - value.prefix)),
             prefix: value.prefix,
         })
     }
@@ -138,7 +144,7 @@ mod test {
         let actual_result: Result<Ipv4Cidr, CidrPartsError> = Ipv4Cidr::try_from(expected_cidr_parts);
 
         // Assert
-        assert_eq!(actual_result, Err(CidrPartsError::InvalidPrefix));
+        assert_eq!(actual_result, Err(CidrPartsError::InvalidPrefix(expected_prefix)));
     }
 
     #[test]

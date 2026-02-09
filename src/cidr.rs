@@ -71,4 +71,16 @@ mod tests {
             _ => panic!("Expected Cidr::V6")
         }
     }
+
+    #[test]
+    fn test_parse_invalid_string() {
+        // Arrange
+        let expected_invalid_string: &str = "some-invalid-string";
+
+        // Act
+        let actual_err = expected_invalid_string.parse::<Cidr>();
+
+        // Assert
+        assert!(actual_err.is_err());
+    }
 }
