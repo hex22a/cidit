@@ -4,7 +4,7 @@ mod cidr;
 
 use clap::{Parser, ValueEnum};
 use crate::inspector::InspectionResult;
-use crate::inspector::ipv4::Inspectable;
+use crate::inspector::Inspectable;
 use crate::cidr::ipv4::Ipv4Cidr;
 
 #[derive(ValueEnum, Clone, Debug)]
@@ -49,10 +49,10 @@ fn main() {
 
     match args.format {
         OutputFormat::Json => {
-            inspector::print_json(&inspection_results, &args.pretty);
+            inspector::print_json(inspection_results, &args.pretty);
         },
         OutputFormat::Table => {
-            inspector::print_table(&inspection_results, &args.headless);
+            inspector::print_table(inspection_results, &args.headless);
         }
     }
 }

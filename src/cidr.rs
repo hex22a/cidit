@@ -1,8 +1,20 @@
 use std::str::FromStr;
-use ipnet::Ipv6Net;
+use thiserror::Error;
+use ipnet::{Ipv6Net, AddrParseError};
 use crate::cidr::ipv4::Ipv4Cidr;
+use crate::cidr::ipv4::Ipv4CidrParseError;
 
 pub mod ipv4;
+pub mod ipv6;
+
+#[derive(Debug, Error)]
+pub(crate) enum CidrParseError {
+    #[error("Not a valid CIDR (v4 or v6)")]
+    Neither {
+        v4: Ipv4CidrParseError,
+        v6: AddrParseError,
+    }
+}
 
 pub(crate) enum Cidr {
     V4(Ipv4Cidr),
@@ -10,18 +22,23 @@ pub(crate) enum Cidr {
 }
 
 impl FromStr for Cidr {
-    type Err = String;
+    type Err = CidrParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if let Ok(v4) = s.parse::<Ipv4Cidr>() {
-            return Ok(Cidr::V4(v4));
-        }
+        let v4_err = match s.parse::<Ipv4Cidr>() {
+            Ok(v4) => return Ok(Cidr::V4(v4)),
+            Err(e) => e,
+        };
 
-        if let Ok(v6) = s.parse::<Ipv6Net>() {
-            return Ok(Cidr::V6(v6));
-        }
+        let v6_err = match s.parse::<Ipv6Net>() {
+            Ok(v6) => return Ok(Cidr::V6(v6)),
+            Err(e) => e,
+        };
 
-        Err("Invalid IP network".into())
+        Err(CidrParseError::Neither {
+            v4: v4_err,
+            v6: v6_err,
+        })
     }
 }
 
