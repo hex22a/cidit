@@ -3,9 +3,9 @@ mod inspector;
 mod cidr;
 
 use clap::{Parser, ValueEnum};
+use crate::cidr::Cidr;
 use crate::inspector::InspectionResult;
 use crate::inspector::Inspectable;
-use crate::cidr::ipv4::Ipv4Cidr;
 
 #[derive(ValueEnum, Clone, Debug)]
 enum OutputFormat {
@@ -34,18 +34,23 @@ struct Args {
 fn main() {
     let args = Args::parse();
 
-    let cidrs: Vec<Ipv4Cidr> = args.cidrs.iter().map(|cidr| {
-        match cidr.parse::<Ipv4Cidr>() {
+    let cidrs: Vec<Cidr> = args.cidrs.iter().map(|cidr| {
+        match cidr.parse::<Cidr>() {
             Ok(cidr) => cidr,
-            Err(err ) => {
+            Err(err) => {
                 eprintln!("Invalid CIDR '{}': {:?}", cidr, err);
                 std::process::exit(1);
             }
         }
-    }).collect::<Vec<Ipv4Cidr>>();
+    }).collect::<Vec<Cidr>>();
 
     let inspection_results: Vec<InspectionResult> = cidrs.iter()
-        .map(|cidr| cidr.inspect()).collect();
+        .map(|cidr| {
+            match cidr {
+                Cidr::V4(v4) => v4.inspect(),
+                Cidr::V6(v6) => v6.inspect(),
+            }
+        }).collect();
 
     match args.format {
         OutputFormat::Json => {

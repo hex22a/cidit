@@ -33,8 +33,8 @@ pub struct Ipv4CidrParts {
     prefix: u8,
 }
 
-trait Subnet {
-    fn get_subnet_address(&self) -> u32;
+trait Network {
+    fn get_network_address(&self) -> u32;
 }
 
 impl TryFrom<Ipv4CidrParts> for Ipv4Cidr {
@@ -67,8 +67,8 @@ impl FromStr for Ipv4Cidr {
     }
 }
 
-impl Subnet for Ipv4Cidr {
-    fn get_subnet_address(&self) -> u32 {
+impl Network for Ipv4Cidr {
+    fn get_network_address(&self) -> u32 {
         self.ip.address & self.mask.address
     }
 }
@@ -85,20 +85,20 @@ impl Ipv4Cidr {
 
 impl Inspectable for Ipv4Cidr {
     fn inspect(&self) -> InspectionResult {
-        let subnet_address = self.get_subnet_address();
-        let first_usable_ip = subnet_address + 1;
-        let broadcast_address = subnet_address + (!0u32 >> self.prefix);
+        let prefix_len = self.prefix_len();
+        let human_readable_ip_part = self.addr().to_string();
+        let network_address = self.get_network_address();
+        let first_usable_ip = network_address + 1;
+        let broadcast_address = network_address + (!0u32 >> prefix_len);
         let last_usable_ip = broadcast_address - 1;
-        let human_readable_ip_part = self.ip.to_string();
-        let prefix = self.prefix;
         InspectionResult::V4(Ipv4InspectionResult {
-            cidr: format!("{human_readable_ip_part}/{prefix}"),
+            cidr: format!("{human_readable_ip_part}/{prefix_len}"),
             first_usable: IPv4::from(first_usable_ip).to_string(),
             last_usable: IPv4::from(last_usable_ip).to_string(),
-            subnet: IPv4::from(subnet_address).to_string(),
+            network: IPv4::from(network_address).to_string(),
             broadcast: IPv4::from(broadcast_address).to_string(),
             address: human_readable_ip_part,
-            prefix_len: prefix,
+            prefix_length: prefix_len,
         })
     }
 }
@@ -111,7 +111,7 @@ mod test {
     use crate::ip::ipv4::IPv4;
     use super::{Ipv4CidrParseError, Ipv4CidrPartsError, Ipv4Cidr, Ipv4CidrParts};
     use super::Ipv4CidrParseError::InvalidCidr;
-    use super::Subnet;
+    use super::Network;
 
     const EXPECTED_BINARY_ADDRESS: u32 = 0b00001010_00010110_10000111_10010000;
     const EXPECTED_IPV4_STR: &str = "10.22.135.144";
@@ -209,7 +209,7 @@ mod test {
         };
 
         // Act
-        let actual_subnet_address: u32 = expected_cidr.get_subnet_address();
+        let actual_subnet_address: u32 = expected_cidr.get_network_address();
 
         // Assert
         assert_eq!(actual_subnet_address, expected_subnet_address);
@@ -230,9 +230,9 @@ mod test {
             first_usable: expected_first_usable_ip,
             last_usable: expected_last_usable_ip,
             broadcast: expected_broadcast_ip,
-            subnet: expected_subnet_address,
+            network: expected_subnet_address,
             address: EXPECTED_IPV4_STR.to_string(),
-            prefix_len: expected_prefix,
+            prefix_length: expected_prefix,
         });
         let expected_cidr = Ipv4Cidr {
             ip: IPv4::from(EXPECTED_BINARY_ADDRESS),

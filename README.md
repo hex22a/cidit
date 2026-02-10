@@ -1,21 +1,21 @@
-# CIDR calculator for CLI
+# CLI CIDR calculator for IPv4 and IPv6
 
-Calculate Network Ranges for a given CIDR.
+Calculate Network Ranges for a given CIDR (IPv4 and IPv6)
 
 ![Crates.io Version](https://img.shields.io/crates/v/cidit)
 ![CI](https://github.com/hex22a/cidit/actions/workflows/test.yml/badge.svg)
 
 For example, `cidit 10.122.33.44/24` prints out the following information:
 
-```
- cidr              first_usable   last_usable     subnet        broadcast     
- 10.122.33.44/24   10.122.33.1    10.122.33.254   10.122.33.0   10.122.33.255 
+```shell
+ ip_ver   cidr              address        prefix   network       first_usable   last_usable     broadcast       available   netmask   hostmask
+ v4       10.122.33.44/24   10.122.33.44   24       10.122.33.0   10.122.33.1    10.122.33.254   10.122.33.255
 ```
 
 **CIDR** stands for **Classless Inter-Domain Routing**. Learn more about CIDR [here](https://aws.amazon.com/what-is/cidr/)
 or [here](https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing).
 
-### Install
+## Install
 
 With [Homebrew](https://brew.sh/) (recommended)
 
@@ -27,28 +27,63 @@ brew tap hex22a/cidit
 brew install cidit
 ```
 
-##### Binaries
+### Binaries
 
 Check out [Releases](https://github.com/hex22a/cidit/releases) page to find binaries for Your platform
 
-### Usage
+## Usage
 
 ```shell
 # cidit --help to get more usage info
 cidit 10.122.33.44/24
 ```
 
-#### Different output formats
+### Supports multiple CIDRs
+
+```shell
+cidit 10.122.33.44/24 10.255.55.66/20 2001:db8:1::ab9:c0a8:102/64
+```
+
+Output:
+
+```shell
+ ip_ver   cidr                          address                    prefix   network        first_usable   last_usable     broadcast       available   netmask                 hostmask
+ v4       10.122.33.44/24               10.122.33.44               24       10.122.33.0    10.122.33.1    10.122.33.254   10.122.33.255
+ v4       10.255.55.66/20               10.255.55.66               20       10.255.48.0    10.255.48.1    10.255.63.254   10.255.63.255
+ v6       2001:db8:1::ab9:c0a8:102/64   2001:db8:1::ab9:c0a8:102   64       2001:db8:1::                                                  2^64        ffff:ffff:ffff:ffff::   ::ffff:ffff:ffff:ffff
+```
+
+### Different output formats
 
 ```shell
 cidit -f json 10.122.33.44/24
-# Prints: {"cidr":"10.122.33.44/24","first_usable":"10.122.33.1","last_usable":"10.122.33.254","subnet":"10.122.33.0","broadcast":"10.122.33.255"}
+# Prints: {"version":2,"data":[{"ip_version":"v4","cidr":"10.122.33.44/24","address":"10.122.33.44","prefix_length":24,"first_usable":"10.122.33.1","last_usable":"10.122.33.254","network":"10.122.33.0","broadcast":"10.122.33.255"}]}
 ```
 
-or alternatively You can run it via cargo from the project root
+Pretty print:
 
 ```shell
-cargo run -- 10.122.33.44/24
+cidit -f json -p 10.122.33.44/24
+```
+
+Output:
+
+```shell
+{
+  "version": 2,
+  "data": [
+    {
+      "ip_version": "v4",
+      "cidr": "10.122.33.44/24",
+      "address": "10.122.33.44",
+      "prefix_length": 24,
+      "first_usable": "10.122.33.1",
+      "last_usable": "10.122.33.254",
+      "network": "10.122.33.0",
+      "broadcast": "10.122.33.255"
+    }
+  ]
+}
 ```
 
 ### Compile from sources

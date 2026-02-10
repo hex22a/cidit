@@ -8,7 +8,7 @@ use crate::inspector::ipv6::Ipv6InspectionResult;
 pub mod ipv4;
 pub mod ipv6;
 
-const JSON_OUTPUT_VERSION: u8 = 1;
+const JSON_OUTPUT_VERSION: u8 = 2;
 
 #[derive(Debug, PartialEq, Eq, Serialize)]
 #[serde(tag = "ip_version", rename_all="lowercase")]
@@ -23,18 +23,17 @@ pub(crate) trait Inspectable {
 
 #[derive(Tabled, Default)]
 pub(crate) struct TableRow {
-    ip_version: &'static str,
+    ip_ver: &'static str,
     cidr: String,
     address: String,
-    prefix_len: u8,
+    prefix: u8,
+    network: String,
     first_usable: String,
     last_usable: String,
-    subnet: String,
     broadcast: String,
+    available: String,
     netmask: String,
     hostmask: String,
-    network: String,
-    subnet_size: String,
 }
 
 #[derive(Serialize)]
@@ -47,25 +46,25 @@ impl From<InspectionResult> for TableRow {
     fn from(value: InspectionResult) -> Self {
         match value {
             InspectionResult::V4(v4) => TableRow {
-                ip_version: "v4",
+                ip_ver: "v4",
                 cidr: v4.cidr,
                 address: v4.address,
-                prefix_len: v4.prefix_len,
+                prefix: v4.prefix_length,
                 first_usable: v4.first_usable,
                 last_usable: v4.last_usable,
-                subnet: v4.subnet,
+                network: v4.network,
                 broadcast: v4.broadcast,
                 ..Default::default()
             },
             InspectionResult::V6(v6) => TableRow {
-                ip_version: "v6",
+                ip_ver: "v6",
                 cidr: v6.cidr,
                 address: v6.address,
-                prefix_len: v6.prefix_len,
+                prefix: v6.prefix_length,
                 netmask: v6.netmask,
                 hostmask: v6.hostmask,
                 network: v6.network,
-                subnet_size: v6.subnet_size,
+                available: v6.subnet_size,
                 ..Default::default()
             }
         }

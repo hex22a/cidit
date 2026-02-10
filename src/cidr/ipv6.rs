@@ -27,7 +27,7 @@ impl Inspectable for Ipv6Net {
         return InspectionResult::V6(Ipv6InspectionResult {
             cidr, 
             address: self.addr().to_string(),
-            prefix_len: self.prefix_len(),
+            prefix_length: self.prefix_len(),
             netmask: self.netmask().to_string(),
             hostmask: self.hostmask().to_string(),
             network: self.network().to_string(),
@@ -86,7 +86,7 @@ mod test {
         let expected_inspection_result: InspectionResult = InspectionResult::V6(Ipv6InspectionResult {
             cidr: expected_cidr_str,
             address: EXPECTED_IPV6_STR.to_string(),
-            prefix_len: expected_prefix_len,
+            prefix_length: expected_prefix_len,
             netmask: expected_netmask,
             hostmask: expected_hostmask,
             network: expected_network,
