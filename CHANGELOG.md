@@ -1,5 +1,24 @@
 # Changelog
 
+## [3.0.0](https://github.com/hex22a/cidit/compare/v2.0.0...v3.0.0) (2026-02-10)
+
+
+### ⚠ BREAKING CHANGES
+
+* Updated output format to support both IPv4 and IPv6
+
+### Features
+
+* Added ipv6 support ([062656b](https://github.com/hex22a/cidit/commit/062656bdaa454468b26b0a0b92ef74491a28e236))
+* Updated output format to support both IPv4 and IPv6 ([8931568](https://github.com/hex22a/cidit/commit/8931568b4dd8f67ec51b6ac6f95fcf7e46845ea2))
+
+
+### Bug Fixes
+
+* Move CIDR logic into separate module ([6c2328e](https://github.com/hex22a/cidit/commit/6c2328edf520f49fa2e2764c34797821c8f0c284))
+* Move get_subnet_address into separate trait ([05c1b71](https://github.com/hex22a/cidit/commit/05c1b7169b4d2abbd6e41c61545619c1673749f7))
+* Unify interface between IPv4 and ipnet Ipv6Addr ([8fbe588](https://github.com/hex22a/cidit/commit/8fbe588d10ba7ec5d0fa1539388c8a0a896946d2))
+
 ## [2.0.0](https://github.com/hex22a/cidit/compare/v1.0.0...v2.0.0) (2026-02-01)
 
 
