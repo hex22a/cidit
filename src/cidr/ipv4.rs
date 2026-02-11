@@ -8,7 +8,7 @@ use crate::ip::ipv4::IPv4;
 const MAX_IPV4_CIDR_PREFIX_LEN: u8 = 32;
 
 #[derive(Debug, Error, PartialEq)]
-pub enum Ipv4CidrParseError {
+pub(crate) enum Ipv4CidrParseError {
     #[error("Invalid CIDR format (expected x.x.x.x/x)")]
     InvalidFormat,
     #[error("Invalid CIDR")]
@@ -16,19 +16,19 @@ pub enum Ipv4CidrParseError {
 }
 
 #[derive(Debug, Error, PartialEq)]
-pub enum Ipv4CidrPartsError {
+pub(crate) enum Ipv4CidrPartsError {
     #[error("Invalid CIDR prefix: {0} (expected <= {max} )", max = MAX_IPV4_CIDR_PREFIX_LEN)]
     InvalidPrefix(u8),
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct Ipv4Cidr {
+pub(crate) struct Ipv4Cidr {
     ip: IPv4,
     mask: IPv4,
     prefix: u8,
 }
 
-pub struct Ipv4CidrParts {
+pub(crate) struct Ipv4CidrParts {
     address: u32,
     prefix: u8,
 }

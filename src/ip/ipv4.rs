@@ -2,13 +2,13 @@ use std::str::FromStr;
 use std::fmt::Display;
 
 #[derive(Debug, PartialEq)]
-pub enum IpParseError {
+pub(crate) enum IpParseError {
     InvalidFormat,
     InvalidIp,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub struct IPv4 {
+pub(crate) struct IPv4 {
     pub(crate) address: u32,
 }
 
