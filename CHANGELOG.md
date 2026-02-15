@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.0.1](https://github.com/hex22a/cidit/compare/v3.0.0...v3.0.1) (2026-02-15)
+
+
+### Bug Fixes
+
+* Made address private in IPv4 struct ([45587ad](https://github.com/hex22a/cidit/commit/45587ad043ef32abeb6732e86f83c617b709b638))
+* Use stricter visibility rules ([4e544a9](https://github.com/hex22a/cidit/commit/4e544a9ea5113b549cb63c99b0fe155ec09952d3))
+
 ## [3.0.0](https://github.com/hex22a/cidit/compare/v2.0.0...v3.0.0) (2026-02-10)
 
 

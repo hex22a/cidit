@@ -1,6 +1,6 @@
 [package]
 name = "cidit"
-version = "3.0.0"
+version = "3.0.1"
 authors = ["Albert Fazullin <hex22a@gmail.com>"]
 license = "MIT"
 description = "CIDR Inspection Tool"
