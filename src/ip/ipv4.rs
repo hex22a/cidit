@@ -9,7 +9,17 @@ pub(crate) enum IpParseError {
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub(crate) struct IPv4 {
-    pub(crate) address: u32,
+    address: u32,
+}
+
+pub(crate) trait Address {
+    fn addr(&self) -> u32;
+}
+
+impl Address for IPv4 {
+    fn addr(&self) -> u32 {
+        self.address
+    }
 }
 
 impl From<u32> for IPv4 {
@@ -44,8 +54,7 @@ impl Display for IPv4 {
 
 #[cfg(test)]
 mod tests {
-    use super::IpParseError;
-    use super::IPv4;
+    use super::{IPv4, Address, IpParseError};
 
     const EXPECTED_BINARY_ADDRESS: u32 = 0b00001010_00010110_10000111_10010000;
     const EXPECTED_IPV4_STR: &str = "10.22.135.144";
@@ -58,7 +67,7 @@ mod tests {
         let actual_ipv4: IPv4 = IPv4::from(EXPECTED_BINARY_ADDRESS);
 
         // Assert
-        assert_eq!(actual_ipv4.address, EXPECTED_BINARY_ADDRESS);
+        assert_eq!(actual_ipv4.addr(), EXPECTED_BINARY_ADDRESS);
     }
 
     #[test]

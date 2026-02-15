@@ -4,6 +4,7 @@ use crate::inspector::InspectionResult;
 use crate::inspector::Inspectable;
 use crate::inspector::ipv4::Ipv4InspectionResult;
 use crate::ip::ipv4::IPv4;
+use crate::ip::ipv4::Address;
 
 const MAX_IPV4_CIDR_PREFIX_LEN: u8 = 32;
 
@@ -60,7 +61,7 @@ impl FromStr for Ipv4Cidr {
         let ip: IPv4 = ip_str.parse::<IPv4>().map_err(|_| Ipv4CidrParseError::InvalidCidr)?;
         let prefix: u8 = prefix.parse::<u8>().map_err(|_| Ipv4CidrParseError::InvalidCidr)?;
         let cidr_parts: Ipv4CidrParts = Ipv4CidrParts {
-            address: ip.address,
+            address: ip.addr(),
             prefix,
         };
         Ok(Self::try_from(cidr_parts).map_err(|_| Ipv4CidrParseError::InvalidCidr)?)
@@ -69,7 +70,7 @@ impl FromStr for Ipv4Cidr {
 
 impl Network for Ipv4Cidr {
     fn get_network_address(&self) -> u32 {
-        self.ip.address & self.mask.address
+        self.ip.addr() & self.mask.addr()
     }
 }
 
@@ -108,7 +109,7 @@ mod test {
     use crate::inspector::InspectionResult;
     use crate::inspector::ipv4::Ipv4InspectionResult;
     use crate::inspector::Inspectable;
-    use crate::ip::ipv4::IPv4;
+    use crate::ip::ipv4::{IPv4, Address};
     use super::{Ipv4CidrParseError, Ipv4CidrPartsError, Ipv4Cidr, Ipv4CidrParts};
     use super::Ipv4CidrParseError::InvalidCidr;
     use super::Network;
@@ -131,8 +132,8 @@ mod test {
         let actual_cidr: Ipv4Cidr = Ipv4Cidr::try_from(expected_cidr_parts).unwrap();
 
         // Assert
-        assert_eq!(actual_cidr.ip.address, EXPECTED_BINARY_ADDRESS);
-        assert_eq!(actual_cidr.mask.address, expected_binary_mask);
+        assert_eq!(actual_cidr.ip.addr(), EXPECTED_BINARY_ADDRESS);
+        assert_eq!(actual_cidr.mask.addr(), expected_binary_mask);
         assert_eq!(actual_cidr.prefix, expected_prefix);
     }
     #[test]
