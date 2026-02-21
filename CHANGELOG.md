@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.0](https://github.com/hex22a/cidit/compare/v3.0.1...v3.1.0) (2026-02-21)
+
+
+### Features
+
+* Added support for NDJSON output format ([87f3fdc](https://github.com/hex22a/cidit/commit/87f3fdc778cb07c43051162fdb4bd1fc6d315f24))
+
 ## [3.0.1](https://github.com/hex22a/cidit/compare/v3.0.0...v3.0.1) (2026-02-15)
 
 
