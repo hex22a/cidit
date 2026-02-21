@@ -82,6 +82,10 @@ pub fn print_json(inspection_results: Vec<InspectionResult>, pretty: &bool) {
     }
 }
 
+pub fn print_ndjson(inspection_results: Vec<InspectionResult>) {
+    inspection_results.iter().for_each(|item| println!("{}", serde_json::to_string(&item).unwrap()));
+}
+
 pub fn print_table(results: Vec<InspectionResult>, headless: &bool) {
     let rows: Vec<TableRow> = results.into_iter().map(TableRow::from).collect();
     let mut table = Table::new(rows);

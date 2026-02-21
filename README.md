@@ -86,6 +86,16 @@ Output:
 }
 ```
 
+ndjson:
+
+```shell
+cidit 10.122.33.44/24 10.255.55.66/20 2001:db8:1::ab9:c0a8:102/64 -f ndjson
+
+{"ip_version":"v4","cidr":"10.122.33.44/24","address":"10.122.33.44","prefix_length":24,"first_usable":"10.122.33.1","last_usable":"10.122.33.254","network":"10.122.33.0","broadcast":"10.122.33.255"}
+{"ip_version":"v4","cidr":"10.255.55.66/20","address":"10.255.55.66","prefix_length":20,"first_usable":"10.255.48.1","last_usable":"10.255.63.254","network":"10.255.48.0","broadcast":"10.255.63.255"}
+{"ip_version":"v6","cidr":"2001:db8:1::ab9:c0a8:102/64","address":"2001:db8:1::ab9:c0a8:102","prefix_length":64,"netmask":"ffff:ffff:ffff:ffff::","hostmask":"::ffff:ffff:ffff:ffff","network":"2001:db8:1::","subnet_size":"2^64"}
+```
+
 ### Compile from sources
 
 [Install Rust](https://rust-lang.org/tools/install/)

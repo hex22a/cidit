@@ -10,7 +10,8 @@ use crate::inspector::Inspectable;
 #[derive(ValueEnum, Clone, Debug)]
 enum OutputFormat {
     Json,
-    Table
+    Table,
+    Ndjson,
 }
 
 #[derive(Parser, Debug)]
@@ -58,6 +59,9 @@ fn main() {
         },
         OutputFormat::Table => {
             inspector::print_table(inspection_results, &args.headless);
-        }
+        },
+        OutputFormat::Ndjson => {
+            inspector::print_ndjson(inspection_results);
+        },
     }
 }
