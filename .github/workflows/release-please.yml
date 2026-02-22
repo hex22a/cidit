@@ -60,7 +60,7 @@ jobs:
             tar -czf cidit-${{ needs.release.outputs.tag_name }}-${TARGET}.tar.gz -C release/${TARGET} cidit
           fi
       - name: Upload to release
-        run: gh release upload ${{ needs.release.outputs.tag_name }} cidit-*.tar.gz --clobber
+        run: gh release upload ${{ needs.release.outputs.tag_name }} cidit-* --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
