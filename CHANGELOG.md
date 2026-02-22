@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.3](https://github.com/hex22a/cidit/compare/v3.1.2...v3.1.3) (2026-02-22)
+
+
+### Bug Fixes
+
+* Upload zip files to releases ([fc2d1e0](https://github.com/hex22a/cidit/commit/fc2d1e0de11d45a6492c68159233d85ff7e19849))
+
 ## [3.1.2](https://github.com/hex22a/cidit/compare/v3.1.1...v3.1.2) (2026-02-22)
 
 
