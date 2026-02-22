@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.1](https://github.com/hex22a/cidit/compare/v3.1.0...v3.1.1) (2026-02-22)
+
+
+### Bug Fixes
+
+* ZIP archive for Windows users ([bcb2ee2](https://github.com/hex22a/cidit/commit/bcb2ee2030d9959b84cf7db8ca41d5f31ec9504b))
+
 ## [3.1.0](https://github.com/hex22a/cidit/compare/v3.0.1...v3.1.0) (2026-02-21)
 
 
