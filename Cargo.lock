@@ -60,7 +60,7 @@ checksum = "175812e0be2bccb6abe50bb8d566126198344f707e304f45c648fd8f2cc0365e"
 
 [[package]]
 name = "cidit"
-version = "3.1.1"
+version = "3.1.2"
 dependencies = [
  "clap",
  "ipnet",

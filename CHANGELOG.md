@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.2](https://github.com/hex22a/cidit/compare/v3.1.1...v3.1.2) (2026-02-22)
+
+
+### Bug Fixes
+
+* Use pwsh Compress-Archive for windows ([2b88b75](https://github.com/hex22a/cidit/commit/2b88b756fe8fa763767386165d88269bca212fe1))
+
 ## [3.1.1](https://github.com/hex22a/cidit/compare/v3.1.0...v3.1.1) (2026-02-22)
 
 
