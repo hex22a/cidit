@@ -55,7 +55,7 @@ jobs:
           mkdir -p release/${TARGET}
           cp target/$TARGET/release/cidit release/${TARGET}/
           if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            zip -j cidit-${{ needs.release.outputs.tag_name }}-${TARGET}.zip release/${TARGET}/${BIN_NAME}
+            pwsh -Command "Compress-Archive -Path target/${TARGET}/release/cidit.exe -DestinationPath cidit-${{ needs.release.outputs.tag_name }}-${TARGET}.zip -Force"
           else
             tar -czf cidit-${{ needs.release.outputs.tag_name }}-${TARGET}.tar.gz -C release/${TARGET} cidit
           fi
