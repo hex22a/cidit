@@ -1,13 +1,12 @@
 use serde::Serialize;
 
 #[derive(Debug, PartialEq, Eq, Serialize)]
-pub(crate) struct Ipv6InspectionResult {
-    pub(crate) cidr: String,
-    pub(crate) address: String,
-    pub(crate) prefix_length: u8,
-    pub(crate) netmask: String,
-    pub(crate) hostmask: String,
-    pub(crate) network: String,
-    pub(crate) subnet_size: String,
+pub struct Ipv6InspectionResult {
+    pub cidr: String,
+    pub address: String,
+    pub prefix_length: u8,
+    pub netmask: String,
+    pub hostmask: String,
+    pub network: String,
+    pub subnet_size: String,
 }
-

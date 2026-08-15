@@ -1,22 +1,22 @@
-use std::str::FromStr;
-use thiserror::Error;
-use ipnet::{Ipv6Net, AddrParseError};
 use crate::cidr::ipv4::Ipv4Cidr;
 use crate::cidr::ipv4::Ipv4CidrParseError;
+use ipnet::{AddrParseError, Ipv6Net};
+use std::str::FromStr;
+use thiserror::Error;
 
 pub mod ipv4;
 pub mod ipv6;
 
 #[derive(Debug, Error)]
-pub(crate) enum CidrParseError {
+pub enum CidrParseError {
     #[error("Not a valid CIDR (v4 or v6)")]
     Neither {
         v4: Ipv4CidrParseError,
         v6: AddrParseError,
-    }
+    },
 }
 
-pub(crate) enum Cidr {
+pub enum Cidr {
     V4(Ipv4Cidr),
     V6(Ipv6Net),
 }
@@ -52,7 +52,6 @@ mod tests {
     const EXPECTED_IPV4_STR: &str = "10.22.135.144";
     const EXPECTED_IPV6_STR: &str = "2001:db8:1::ab9:c0a8:102";
 
-
     #[test]
     fn test_parse_ipv4_cidr() {
         // Arrange
@@ -66,8 +65,8 @@ mod tests {
             Cidr::V4(cidr) => {
                 assert_eq!(cidr.prefix_len(), EXPECTED_IPV4_PREFIX);
                 assert_eq!(cidr.addr().to_string(), EXPECTED_IPV4_STR);
-            },
-            _ => panic!("Expected Cidr::V4")
+            }
+            _ => panic!("Expected Cidr::V4"),
         }
     }
 
@@ -84,8 +83,8 @@ mod tests {
             Cidr::V6(cidr) => {
                 assert_eq!(cidr.prefix_len(), EXPECTED_IPV6_PREFIX);
                 assert_eq!(cidr.addr().to_string(), EXPECTED_IPV6_STR);
-            },
-            _ => panic!("Expected Cidr::V6")
+            }
+            _ => panic!("Expected Cidr::V6"),
         }
     }
 
