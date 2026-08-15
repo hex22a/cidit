@@ -77,9 +77,9 @@ pub fn print_ndjson(inspection_results: Vec<InspectionResult>) {
 pub fn print_table(results: Vec<InspectionResult>, headless: &bool) {
     let rows: Vec<TableRow> = results.into_iter().map(TableRow::from).collect();
     let mut table = Table::new(rows);
-    (&mut table).with(Style::blank());
+    table.with(Style::blank());
     if *headless {
-        (&mut table).with(Remove::row(Rows::first()));
+        table.with(Remove::row(Rows::first()));
     }
 
     println!("{table}");
