@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.0](https://github.com/hex22a/cidit/compare/v3.1.3...v3.2.0) (2026-08-15)
+
+
+### Features
+
+* Release a library crate ([1ca99eb](https://github.com/hex22a/cidit/commit/1ca99ebe8b78121c325c4389c098641ab69ac2d0))
+
 ## [3.1.3](https://github.com/hex22a/cidit/compare/v3.1.2...v3.1.3) (2026-02-22)
 
 
