@@ -1,5 +1,6 @@
 use serde::Serialize;
 
+/// Inspection result for IPv6
 #[derive(Debug, PartialEq, Eq, Serialize)]
 pub struct Ipv6InspectionResult {
     pub cidr: String,

@@ -1,6 +1,6 @@
-use crate::cidr::ipv4::Ipv4Cidr;
-use crate::cidr::ipv4::Ipv4CidrParseError;
 use ipnet::{AddrParseError, Ipv6Net};
+use ipv4::Ipv4Cidr;
+use ipv4::Ipv4CidrParseError;
 use std::str::FromStr;
 use thiserror::Error;
 
@@ -16,6 +16,7 @@ pub enum CidrParseError {
     },
 }
 
+/// Enum containing IPv4 and IPv6 varaiants
 pub enum Cidr {
     V4(Ipv4Cidr),
     V6(Ipv6Net),

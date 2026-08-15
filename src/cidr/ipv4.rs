@@ -22,6 +22,7 @@ pub enum Ipv4CidrPartsError {
     InvalidPrefix(u8),
 }
 
+/// An internal representation of IPv4 CIDR
 #[derive(Debug, PartialEq, Eq)]
 pub struct Ipv4Cidr {
     ip: IPv4,
