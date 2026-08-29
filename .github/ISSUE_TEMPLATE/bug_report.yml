@@ -1,0 +1,46 @@
+name: Bug report
+description: Create a report to help improve cidit
+title: 'Bug: '
+labels: ['bug']
+assignees: []
+body:
+  - type: textarea
+    id: describe
+    attributes:
+      label: Describe the bug
+      placeholder: A clear and concise description of what the bug is.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: To reproduce
+      placeholder: Steps to reproduce the bug
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: cidit version
+      description: What version of cidit did this bug occur in?
+      placeholder: cidit -V
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: What OS were You running cidit on?
+      options:
+      - Linux
+      - MacOS
+      - Windows
+      - Other
+    validations:
+      required: false
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      placeholder: Additional context such as log output that you think might be helpful in diagnosis
+    validations:
+      required: false
