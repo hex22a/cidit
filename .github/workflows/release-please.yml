@@ -24,8 +24,7 @@ jobs:
 
   binaries:
     permissions:
-      contents: write
-      pull-requests: write
+      contents: read
     needs: release
     if: ${{ needs.release.outputs.release_created == 'true' }}
     strategy:
@@ -69,8 +68,7 @@ jobs:
 
   brew-tap:
     permissions:
-      contents: write
-      pull-requests: write
+      contents: read
     needs:
       - binaries
       - release
@@ -143,7 +141,7 @@ jobs:
 
   crates:
     permissions:
-      contents: write
+      contents: read
     needs: release
     runs-on: ubuntu-latest
     environment: crates.io
