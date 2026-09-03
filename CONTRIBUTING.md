@@ -15,12 +15,12 @@ Please follow the guidelines to ensure smooth experience during the process.
 ## Code of Conduct
 
 Please note that this project is governed by [Code of Conduct](CODE_OF_CONDUCT.md)
-to ensure it's a safe and welocming space for everyone to contribute.
+to ensure it's a safe and welcoming space for everyone to contribute.
 By participating in this project, you agree to abide by these terms.
 
 ## Issues
 
-### Fetaure Requests
+### Feature Requests
 
 If you have ideas or how to improve our projects,
 you can suggest features by opening a GitHub issue.
@@ -62,7 +62,7 @@ You can read more about working with pull requests on
 ## AI
 
 While AI is a powerful tool some people tend to overuse it.
-[Some person even calims they don't read AI genearated code anymore](https://x.com/unclebobmartin/status/2080257779395154409?s=20).
+[Some person even claims they don't read AI generated code anymore](https://x.com/unclebobmartin/status/2080257779395154409?s=20).
 
 If a PR is obviously made with AI I'll probably just close it without a response.
-**I can't be bothered to rewiew what You didn't bother to review yourself**
+**I can't be bothered to review what You didn't bother to review yourself**
