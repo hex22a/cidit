@@ -1,4 +1,6 @@
 name: Dependency check
+permissions:
+  contents: read
 on:
   workflow_call:
 
