@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.3](https://github.com/hex22a/cidit/compare/v3.2.2...v3.2.3) (2026-09-04)
+
+
+### Bug Fixes
+
+* Optimized memory usage by passing bool as a value ([cd54d30](https://github.com/hex22a/cidit/commit/cd54d3063aea5ce14eca84b738498134eabcdc06))
+
 ## [3.2.2](https://github.com/hex22a/cidit/compare/v3.2.1...v3.2.2) (2026-09-04)
 
 
