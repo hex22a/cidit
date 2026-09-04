@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.1](https://github.com/hex22a/cidit/compare/v3.2.0...v3.2.1) (2026-09-04)
+
+
+### Bug Fixes
+
+* Fixed RUSTSEC-2026-0173 ([37dc1d7](https://github.com/hex22a/cidit/commit/37dc1d787007991becf6ec7c04e8ca2a4da03531))
+
 ## [3.2.0](https://github.com/hex22a/cidit/compare/v3.1.3...v3.2.0) (2026-08-15)
 
 
