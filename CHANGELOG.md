@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.2](https://github.com/hex22a/cidit/compare/v3.2.1...v3.2.2) (2026-09-04)
+
+
+### Bug Fixes
+
+* Allow writing binaries in workflows ([cb71085](https://github.com/hex22a/cidit/commit/cb710850d8131f6a51dcb03203d38746db204f94))
+
 ## [3.2.1](https://github.com/hex22a/cidit/compare/v3.2.0...v3.2.1) (2026-09-04)
 
 
