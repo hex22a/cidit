@@ -8,6 +8,8 @@ on:
 jobs:
   deny:
     uses: ./.github/workflows/deny.yml
+    permissions:
+      contents: read
   release:
     runs-on: ubuntu-latest
     permissions:
