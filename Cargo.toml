@@ -2,7 +2,7 @@
 name = "cidit"
 version = "3.2.0"
 authors = ["Albert Fazullin <hex22a@gmail.com>"]
-license = "MIT"
+license = "MIT OR Apache-2.0"
 description = "CIDR Inspection Tool"
 repository = "https://github.com/hex22a/cidit"
 edition = "2024"
