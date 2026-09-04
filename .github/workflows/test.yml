@@ -9,7 +9,9 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  Test:
+  deny:
+    uses: ./.github/workflows/deny.yml
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
