@@ -71,7 +71,7 @@ impl From<InspectionResult> for TableRow {
     }
 }
 
-pub fn print_json(inspection_results: Vec<InspectionResult>, pretty: &bool) {
+pub fn print_json(inspection_results: Vec<InspectionResult>, pretty: bool) {
     let json_output = JsonOutput {
         version: JSON_OUTPUT_VERSION,
         data: inspection_results,
@@ -88,7 +88,7 @@ pub fn print_ndjson(inspection_results: Vec<InspectionResult>) {
         .for_each(|item| println!("{}", serde_json::to_string(&item).unwrap()));
 }
 
-pub fn print_table(results: Vec<InspectionResult>, headless: &bool) {
+pub fn print_table(results: Vec<InspectionResult>, headless: bool) {
     let rows: Vec<Vec<String>> = results
         .into_iter()
         .map(TableRow::from)
@@ -96,7 +96,7 @@ pub fn print_table(results: Vec<InspectionResult>, headless: &bool) {
         .collect();
     let mut table = Table::new();
     table.load_style(NOTHING);
-    if !*headless {
+    if !headless {
         table.set_header(vec![
             "ip_ver",
             "cidr",

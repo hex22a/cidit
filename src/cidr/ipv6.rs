@@ -41,7 +41,7 @@ mod test {
     use crate::inspector::{Inspectable, InspectionResult, ipv6::Ipv6InspectionResult};
     use ipnet::Ipv6Net;
 
-    use super::SubnetSize;
+    use super::*;
 
     const EXPECTED_IPV6_STR: &str = "2001:db8:1::ab9:c0a8:102";
 

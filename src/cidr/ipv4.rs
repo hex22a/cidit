@@ -111,9 +111,7 @@ impl Inspectable for Ipv4Cidr {
 
 #[cfg(test)]
 mod test {
-    use super::Ipv4CidrParseError::InvalidCidr;
-    use super::Network;
-    use super::{Ipv4Cidr, Ipv4CidrParseError, Ipv4CidrParts, Ipv4CidrPartsError};
+    use super::*;
     use crate::inspector::Inspectable;
     use crate::inspector::InspectionResult;
     use crate::inspector::ipv4::Ipv4InspectionResult;
@@ -202,7 +200,7 @@ mod test {
         let actual_result: Result<Ipv4Cidr, Ipv4CidrParseError> = expected_cidr_string.parse();
 
         // Assert
-        assert_eq!(actual_result, Err(InvalidCidr));
+        assert_eq!(actual_result, Err(Ipv4CidrParseError::InvalidCidr));
     }
 
     #[test]

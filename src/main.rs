@@ -53,10 +53,10 @@ fn main() {
 
     match args.format {
         OutputFormat::Json => {
-            print::print_json(inspection_results, &args.pretty);
+            print::print_json(inspection_results, args.pretty);
         }
         OutputFormat::Table => {
-            print::print_table(inspection_results, &args.headless);
+            print::print_table(inspection_results, args.headless);
         }
         OutputFormat::Ndjson => {
             print::print_ndjson(inspection_results);

@@ -16,7 +16,7 @@ pub enum CidrParseError {
     },
 }
 
-/// Enum containing IPv4 and IPv6 varaiants
+/// Enum containing IPv4 and IPv6 variants
 pub enum Cidr {
     V4(Ipv4Cidr),
     V6(Ipv6Net),
