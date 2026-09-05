@@ -1,9 +1,13 @@
 use cidit::InspectionResult;
-use comfy_table::{Table, presets::NOTHING};
 use serde::Serialize;
+use tabled::{
+    Table, Tabled,
+    settings::{Remove, Style, object::Rows},
+};
+
 const JSON_OUTPUT_VERSION: u8 = 2;
 
-#[derive(Default)]
+#[derive(Tabled, Default)]
 pub(crate) struct TableRow {
     ip_ver: &'static str,
     cidr: String,
@@ -16,24 +20,6 @@ pub(crate) struct TableRow {
     available: String,
     netmask: String,
     hostmask: String,
-}
-
-impl TableRow {
-    fn table_row(self) -> Vec<String> {
-        vec![
-            self.ip_ver.to_string(),
-            self.cidr,
-            self.address,
-            self.prefix.to_string(),
-            self.network,
-            self.first_usable,
-            self.last_usable,
-            self.broadcast,
-            self.available,
-            self.netmask,
-            self.hostmask,
-        ]
-    }
 }
 
 #[derive(Serialize)]
@@ -89,29 +75,12 @@ pub fn print_ndjson(inspection_results: Vec<InspectionResult>) {
 }
 
 pub fn print_table(results: Vec<InspectionResult>, headless: bool) {
-    let rows: Vec<Vec<String>> = results
-        .into_iter()
-        .map(TableRow::from)
-        .map(TableRow::table_row)
-        .collect();
-    let mut table = Table::new();
-    table.load_style(NOTHING);
-    if !headless {
-        table.set_header(vec![
-            "ip_ver",
-            "cidr",
-            "address",
-            "prefix",
-            "network",
-            "first_usable",
-            "last_usable",
-            "broadcast",
-            "available",
-            "netmask",
-            "hostmask",
-        ]);
+    let rows: Vec<TableRow> = results.into_iter().map(TableRow::from).collect();
+    let mut table = Table::new(rows);
+    table.with(Style::blank());
+    if headless {
+        table.with(Remove::row(Rows::first()));
     }
-    table.add_rows(rows);
 
     println!("{table}");
 }
