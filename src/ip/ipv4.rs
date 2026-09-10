@@ -1,9 +1,13 @@
-use std::str::FromStr;
 use std::fmt::Display;
+use std::str::FromStr;
 
-#[derive(Debug, PartialEq)]
+use thiserror::Error;
+
+#[derive(Debug, Error, PartialEq)]
 pub(crate) enum IpParseError {
+    #[error("Invelid IP format")]
     InvalidFormat,
+    #[error("Not a valid IP address")]
     InvalidIp,
 }
 
@@ -36,7 +40,8 @@ impl FromStr for IPv4 {
         if parts.len() != 4 {
             return Err(IpParseError::InvalidFormat);
         }
-        let octets: Vec<u8> = parts.iter()
+        let octets: Vec<u8> = parts
+            .iter()
             .map(|s| s.parse::<u8>().map_err(|_| IpParseError::InvalidIp))
             .collect::<Result<_, _>>()?;
 
@@ -54,10 +59,19 @@ impl Display for IPv4 {
 
 #[cfg(test)]
 mod tests {
-    use super::{IPv4, Address, IpParseError};
+    use super::*;
+    use crate::test_helpers;
 
     const EXPECTED_BINARY_ADDRESS: u32 = 0b00001010_00010110_10000111_10010000;
     const EXPECTED_IPV4_STR: &str = "10.22.135.144";
+
+    #[test]
+    fn test_ip_parse_error_type() {
+        // Arrange
+        // Act
+        // Assert
+        test_helpers::assert_error::<IpParseError>();
+    }
 
     #[test]
     fn test_ipv4_from() {
@@ -110,7 +124,7 @@ mod tests {
     fn test_human_readable() {
         // Arrange
         let expected_ipv4 = IPv4 {
-            address: EXPECTED_BINARY_ADDRESS
+            address: EXPECTED_BINARY_ADDRESS,
         };
 
         // Act

@@ -11,3 +11,17 @@ pub struct Ipv6InspectionResult {
     pub network: String,
     pub subnet_size: String,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_helpers;
+
+    #[test]
+    fn test_ipv4_inspection_result_type() {
+        // Arrange
+        // Act
+        // Assert
+        test_helpers::assert_normal_type::<Ipv6InspectionResult>();
+    }
+}

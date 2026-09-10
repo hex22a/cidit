@@ -9,13 +9,6 @@ use thiserror::Error;
 const MAX_IPV4_CIDR_PREFIX_LEN: u8 = 32;
 
 /// Error parsing IPv4 CIDR
-///
-/// ```
-/// # use::cidit::Ipv4CidrParseError;
-/// #
-/// # fn assert_error<T: std::error::Error + Send + Sync + 'static>() {}
-/// # assert_error::<Ipv4CidrParseError>();
-/// ```
 #[derive(Debug, Error, PartialEq)]
 pub enum Ipv4CidrParseError {
     #[error("Invalid CIDR format (expected x.x.x.x/x)")]
@@ -24,16 +17,8 @@ pub enum Ipv4CidrParseError {
     InvalidCidr,
 }
 
-/// Errors when IPv4 CIDR parts are invalid
-///
-/// ```
-/// # use::cidit::Ipv4CidrPartsError;
-/// #
-/// # fn assert_error<T: std::error::Error + Send + Sync + 'static>() {}
-/// # assert_error::<Ipv4CidrPartsError>();
-/// ```
 #[derive(Debug, Error, PartialEq)]
-pub enum Ipv4CidrPartsError {
+pub(crate) enum Ipv4CidrPartsError {
     #[error("Invalid CIDR prefix: {0} (expected <= {max} )", max = MAX_IPV4_CIDR_PREFIX_LEN)]
     InvalidPrefix(u8),
 }
@@ -132,9 +117,34 @@ mod test {
     use crate::inspector::InspectionResult;
     use crate::inspector::ipv4::Ipv4InspectionResult;
     use crate::ip::ipv4::{Address, IPv4};
+    use crate::test_helpers;
 
     const EXPECTED_BINARY_ADDRESS: u32 = 0b00001010_00010110_10000111_10010000;
     const EXPECTED_IPV4_STR: &str = "10.22.135.144";
+
+    #[test]
+    fn test_cidr_parse_error_type() {
+        // Arrange
+        // Act
+        // Assert
+        test_helpers::assert_error::<Ipv4CidrParseError>();
+    }
+
+    #[test]
+    fn test_cidr_parts_error_type() {
+        // Arrange
+        // Act
+        // Assert
+        test_helpers::assert_error::<Ipv4CidrPartsError>();
+    }
+
+    #[test]
+    fn test_ipv4_cidr_type() {
+        // Arrange
+        // Act
+        // Assert
+        test_helpers::assert_normal_type::<Ipv4Cidr>();
+    }
 
     #[test]
     fn test_ipv4cidr_try_from_success() {
