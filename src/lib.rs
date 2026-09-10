@@ -8,6 +8,8 @@ mod ip;
 
 pub use cidr::Cidr;
 pub use cidr::ipv4::Ipv4Cidr;
+pub use cidr::ipv4::Ipv4CidrParseError;
+pub use cidr::ipv4::Ipv4CidrPartsError;
 pub use inspector::Inspectable;
 pub use inspector::InspectionResult;
 pub use inspector::ipv4::Ipv4InspectionResult;

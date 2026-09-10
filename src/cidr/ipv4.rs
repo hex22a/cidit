@@ -8,6 +8,14 @@ use thiserror::Error;
 
 const MAX_IPV4_CIDR_PREFIX_LEN: u8 = 32;
 
+/// Error parsing IPv4 CIDR
+///
+/// ```
+/// # use::cidit::Ipv4CidrParseError;
+/// #
+/// # fn assert_error<T: std::error::Error + Send + Sync + 'static>() {}
+/// # assert_error::<Ipv4CidrParseError>();
+/// ```
 #[derive(Debug, Error, PartialEq)]
 pub enum Ipv4CidrParseError {
     #[error("Invalid CIDR format (expected x.x.x.x/x)")]
@@ -16,6 +24,14 @@ pub enum Ipv4CidrParseError {
     InvalidCidr,
 }
 
+/// Errors when IPv4 CIDR parts are invalid
+///
+/// ```
+/// # use::cidit::Ipv4CidrPartsError;
+/// #
+/// # fn assert_error<T: std::error::Error + Send + Sync + 'static>() {}
+/// # assert_error::<Ipv4CidrPartsError>();
+/// ```
 #[derive(Debug, Error, PartialEq)]
 pub enum Ipv4CidrPartsError {
     #[error("Invalid CIDR prefix: {0} (expected <= {max} )", max = MAX_IPV4_CIDR_PREFIX_LEN)]
