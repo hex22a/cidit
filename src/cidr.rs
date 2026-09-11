@@ -17,6 +17,7 @@ pub enum CidrParseError {
 }
 
 /// Enum containing IPv4 and IPv6 variants
+#[derive(Debug, PartialEq)]
 pub enum Cidr {
     V4(Ipv4Cidr),
     V6(Ipv6Net),

@@ -33,8 +33,8 @@ pub struct Ipv4Cidr {
 }
 
 pub(crate) struct Ipv4CidrParts {
-    address: u32,
-    prefix: u8,
+    pub(crate) address: u32,
+    pub(crate) prefix: u8,
 }
 
 /// IPv4 Network

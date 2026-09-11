@@ -5,6 +5,7 @@
 mod cidr;
 mod inspector;
 mod ip;
+mod range;
 
 #[cfg(test)]
 mod test_helpers;
