@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.4](https://github.com/hex22a/cidit/compare/v3.2.3...v3.2.4) (2026-09-11)
+
+
+### Bug Fixes
+
+* Properly handle 0 and 32 bit netmasks. Comply with RFC 3021 ([1aa78ba](https://github.com/hex22a/cidit/commit/1aa78babfa9d7514bfa1f289c6d2eede9643d790))
+
 ## [3.2.3](https://github.com/hex22a/cidit/compare/v3.2.2...v3.2.3) (2026-09-04)
 
 
