@@ -6,6 +6,7 @@ license = "MIT OR Apache-2.0"
 description = "CIDR Inspection Tool"
 repository = "https://github.com/hex22a/cidit"
 edition = "2024"
+categories = ["command-line-utilities"]
 
 [dependencies]
 clap = { version = "4.6.6", features = ["derive"] }
