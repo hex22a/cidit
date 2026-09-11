@@ -20,11 +20,11 @@ or on [Wikipedia](https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing).
 
 With [Homebrew](https://brew.sh/) (recommended)
 
-```shell
+```bash
 brew tap hex22a/cidit
 ```
 
-```shell
+```bash
 brew install cidit
 ```
 
@@ -35,20 +35,20 @@ to find binaries for Your platform
 
 ## Usage
 
-```shell
+```bash
 # cidit --help to get more usage info
 cidit 10.122.33.44/24
 ```
 
 ### Supports multiple CIDRs
 
-```shell
+```bash
 cidit 10.122.33.44/24 10.255.55.66/20 2001:db8:1::ab9:c0a8:102/64
 ```
 
 Output:
 
-```shell
+```bash
  ip_ver   cidr                          address                    prefix   network        first_usable   last_usable     broadcast       available   netmask                 hostmask
  v4       10.122.33.44/24               10.122.33.44               24       10.122.33.0    10.122.33.1    10.122.33.254   10.122.33.255
  v4       10.255.55.66/20               10.255.55.66               20       10.255.48.0    10.255.48.1    10.255.63.254   10.255.63.255
@@ -57,20 +57,20 @@ Output:
 
 ### Different output formats
 
-```shell
+```bash
 cidit -f json 10.122.33.44/24
 # Prints: {"version":2,"data":[{"ip_version":"v4","cidr":"10.122.33.44/24","address":"10.122.33.44","prefix_length":24,"first_usable":"10.122.33.1","last_usable":"10.122.33.254","network":"10.122.33.0","broadcast":"10.122.33.255"}]}
 ```
 
 Pretty print:
 
-```shell
+```bash
 cidit -f json -p 10.122.33.44/24
 ```
 
 Output:
 
-```shell
+```bash
 {
   "version": 2,
   "data": [
@@ -90,7 +90,7 @@ Output:
 
 ndjson:
 
-```shell
+```bash
 cidit 10.122.33.44/24 10.255.55.66/20 2001:db8:1::ab9:c0a8:102/64 -f ndjson
 
 {"ip_version":"v4","cidr":"10.122.33.44/24","address":"10.122.33.44","prefix_length":24,"first_usable":"10.122.33.1","last_usable":"10.122.33.254","network":"10.122.33.0","broadcast":"10.122.33.255"}
@@ -119,19 +119,19 @@ echo 10.122.33.44/24 10.255.55.66/20 2001:db8:1::ab9:c0a8:102/64 | xargs -n 1 -P
 
 Clone this repo:
 
-```shell
+```bash
 git clone git@github.com:hex22a/cidit.git && cd ./cidit
 ```
 
 Run tests:
 
-```shell
+```bash
 cargo test
 ```
 
 Build the binary
 
-```shell
+```bash
 cargo build
 ```
 
