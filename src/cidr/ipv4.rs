@@ -25,7 +25,7 @@ pub(crate) enum Ipv4CidrPartsError {
 }
 
 /// An internal representation of IPv4 CIDR
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Ipv4Cidr {
     ip: IPv4,
     mask: IPv4,
@@ -38,7 +38,7 @@ pub(crate) struct Ipv4CidrParts {
 }
 
 /// IPv4 Network
-trait Ipv4Network {
+pub(crate) trait Ipv4Network {
     /// Gets arithmetical network address for all network masks
     /// including /31 for point-to-point connections and /32 for single host.
     /// [RFC 3021](https://datatracker.ietf.org/doc/html/rfc3021)
