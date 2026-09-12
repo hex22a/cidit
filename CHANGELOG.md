@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.3.0](https://github.com/hex22a/cidit/compare/v3.2.4...v3.3.0) (2026-09-12)
+
+
+### Features
+
+* Calculate exact CIDR fit for any given IPv4 range ([30a8806](https://github.com/hex22a/cidit/commit/30a880655d9bf64be7e6cbed9f9a6751debc4b33))
+* Calculate smallest common CIDR block and exact CIDR fit for any given IPv6 range ([6f63e9d](https://github.com/hex22a/cidit/commit/6f63e9d8d27b2dbad37021a7c8564a5ffd0157fe))
+* Calculate smallest common IPv4 CIDR for a given range ([31f9501](https://github.com/hex22a/cidit/commit/31f9501d14419302d81125a48ef26f463f0f7d7c))
+* Parse input ranges ([54e2724](https://github.com/hex22a/cidit/commit/54e2724028dc33169108249218171ef030bfcb3d))
+* Print CIDRs from a range ([e2b424f](https://github.com/hex22a/cidit/commit/e2b424f7ba0f1fe3b82ad3c98d941d8a46a02af0))
+
 ## [3.2.4](https://github.com/hex22a/cidit/compare/v3.2.3...v3.2.4) (2026-09-11)
 
 
