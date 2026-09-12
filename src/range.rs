@@ -1,9 +1,26 @@
-use ipnet::Ipv6AddrRange;
+use std::{net::Ipv6Addr, str::FromStr};
 
-use crate::{Cidr, range::ipv4::Ipv4Range};
+use ipnet::Ipv6AddrRange;
+use thiserror::Error;
+
+use crate::{
+    Cidr,
+    ip::{IpParseError, ipv4::IPv4},
+    range::ipv4::Ipv4Range,
+};
 
 mod ipv4;
 mod ipv6;
+
+#[derive(Debug, Error)]
+pub enum RangeParseError {
+    #[error("One or both provided IPs are invalid: {0}")]
+    IpError(IpParseError),
+    #[error("Invalid range format. Supported formats: ip..ip, ip-ip, \"ip ip\"")]
+    Format,
+    #[error("Inconsistent IP versions. Both IPs in range should be either v4 or v6")]
+    Inconsistent,
+}
 
 pub trait AddressRange {
     fn smallest_common_cidr(&self) -> Cidr;
@@ -13,4 +30,285 @@ pub trait AddressRange {
 pub enum IpRange {
     V4(Ipv4Range),
     V6(Ipv6AddrRange),
+}
+
+impl FromStr for IpRange {
+    type Err = RangeParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if let Some((start, end)) = s.split_once("..") {
+            match start.parse::<IPv4>() {
+                Ok(ipv4_start) => match end.parse::<IPv4>() {
+                    Ok(ipv4_end) => return Ok(IpRange::V4(Ipv4Range::new(ipv4_start, ipv4_end))),
+                    Err(ipv4_end_err) => match end.parse::<Ipv6Addr>() {
+                        Ok(_) => return Err(RangeParseError::Inconsistent),
+                        Err(_) => {
+                            return Err(RangeParseError::IpError(IpParseError::V4(ipv4_end_err)));
+                        }
+                    },
+                },
+                Err(_) => match start.parse::<Ipv6Addr>() {
+                    Ok(ipv6_start) => match end.parse::<Ipv6Addr>() {
+                        Ok(ipv6_end) => {
+                            return Ok(IpRange::V6(Ipv6AddrRange::new(ipv6_start, ipv6_end)));
+                        }
+                        Err(ipv6_end_err) => match end.parse::<IPv4>() {
+                            Ok(_) => return Err(RangeParseError::Inconsistent),
+                            Err(_) => {
+                                return Err(RangeParseError::IpError(IpParseError::V6(
+                                    ipv6_end_err,
+                                )));
+                            }
+                        },
+                    },
+                    Err(ipv6_start_err) => {
+                        return Err(RangeParseError::IpError(IpParseError::V6(ipv6_start_err)));
+                    }
+                },
+            };
+        } else if let Some((start, end)) = s.split_once("-") {
+            match start.parse::<IPv4>() {
+                Ok(ipv4_start) => match end.parse::<IPv4>() {
+                    Ok(ipv4_end) => return Ok(IpRange::V4(Ipv4Range::new(ipv4_start, ipv4_end))),
+                    Err(ipv4_end_err) => match end.parse::<Ipv6Addr>() {
+                        Ok(_) => return Err(RangeParseError::Inconsistent),
+                        Err(_) => {
+                            return Err(RangeParseError::IpError(IpParseError::V4(ipv4_end_err)));
+                        }
+                    },
+                },
+                Err(_) => match start.parse::<Ipv6Addr>() {
+                    Ok(ipv6_start) => match end.parse::<Ipv6Addr>() {
+                        Ok(ipv6_end) => {
+                            return Ok(IpRange::V6(Ipv6AddrRange::new(ipv6_start, ipv6_end)));
+                        }
+                        Err(ipv6_end_err) => match end.parse::<IPv4>() {
+                            Ok(_) => return Err(RangeParseError::Inconsistent),
+                            Err(_) => {
+                                return Err(RangeParseError::IpError(IpParseError::V6(
+                                    ipv6_end_err,
+                                )));
+                            }
+                        },
+                    },
+                    Err(ipv6_start_err) => {
+                        return Err(RangeParseError::IpError(IpParseError::V6(ipv6_start_err)));
+                    }
+                },
+            };
+        } else if let Some((start, end)) = s.split_once(" ") {
+            match start.parse::<IPv4>() {
+                Ok(ipv4_start) => match end.parse::<IPv4>() {
+                    Ok(ipv4_end) => return Ok(IpRange::V4(Ipv4Range::new(ipv4_start, ipv4_end))),
+                    Err(ipv4_end_err) => match end.parse::<Ipv6Addr>() {
+                        Ok(_) => return Err(RangeParseError::Inconsistent),
+                        Err(_) => {
+                            return Err(RangeParseError::IpError(IpParseError::V4(ipv4_end_err)));
+                        }
+                    },
+                },
+                Err(ipv4_start_err) => match start.parse::<Ipv6Addr>() {
+                    Ok(ipv6_start) => match end.parse::<Ipv6Addr>() {
+                        Ok(ipv6_end) => {
+                            return Ok(IpRange::V6(Ipv6AddrRange::new(ipv6_start, ipv6_end)));
+                        }
+                        Err(ipv6_end_err) => match end.parse::<IPv4>() {
+                            Ok(_) => return Err(RangeParseError::Inconsistent),
+                            Err(_) => {
+                                return Err(RangeParseError::IpError(IpParseError::V6(
+                                    ipv6_end_err,
+                                )));
+                            }
+                        },
+                    },
+                    Err(ipv6_start_err) => {
+                        return Err(RangeParseError::IpError(IpParseError::V6(ipv6_start_err)));
+                    }
+                },
+            };
+        } else {
+            Err(RangeParseError::Format)
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const EXPECTED_IPV4_START_STR: &str = "10.22.135.144";
+    const EXPECTED_IPV4_END_STR: &str = "10.22.135.255";
+    const EXPECTED_IPV6_START_STR: &str = "2001:db8:1::ab9:c0a8:102";
+    const EXPECTED_IPV6_END_STR: &str = "2001:db8:1::ab9:c0a8:ffff";
+
+    #[test]
+    fn test_parse_ipv4_dots() {
+        // Arrange
+        let expected_ipv4_range_string =
+            format!("{EXPECTED_IPV4_START_STR}..{EXPECTED_IPV4_END_STR}");
+
+        // Act
+        let actual_range: IpRange = expected_ipv4_range_string.parse().unwrap();
+
+        // Assert
+        match actual_range {
+            IpRange::V4(range) => {
+                assert_eq!(range.start().to_string(), EXPECTED_IPV4_START_STR);
+                assert_eq!(range.end().to_string(), EXPECTED_IPV4_END_STR);
+            }
+            _ => panic!("Expected IpRange::V4"),
+        }
+    }
+
+    #[test]
+    fn test_parse_ipv4_dash() {
+        // Arrange
+        let expected_ipv4_range_string =
+            format!("{EXPECTED_IPV4_START_STR}-{EXPECTED_IPV4_END_STR}");
+
+        // Act
+        let actual_range: IpRange = expected_ipv4_range_string.parse().unwrap();
+
+        // Assert
+        match actual_range {
+            IpRange::V4(range) => {
+                assert_eq!(range.start().to_string(), EXPECTED_IPV4_START_STR);
+                assert_eq!(range.end().to_string(), EXPECTED_IPV4_END_STR);
+            }
+            _ => panic!("Expected IpRange::V4"),
+        }
+    }
+
+    #[test]
+    fn test_parse_ipv4_space() {
+        // Arrange
+        let expected_ipv4_range_string =
+            format!("{EXPECTED_IPV4_START_STR} {EXPECTED_IPV4_END_STR}");
+
+        // Act
+        let actual_range: IpRange = expected_ipv4_range_string.parse().unwrap();
+
+        // Assert
+        match actual_range {
+            IpRange::V4(range) => {
+                assert_eq!(range.start().to_string(), EXPECTED_IPV4_START_STR);
+                assert_eq!(range.end().to_string(), EXPECTED_IPV4_END_STR);
+            }
+            _ => panic!("Expected IpRange::V4"),
+        }
+    }
+
+    #[test]
+    fn test_parse_ipv6_dots() {
+        // Arrange
+        let expected_ipv6_range_string =
+            format!("{EXPECTED_IPV6_START_STR}..{EXPECTED_IPV6_END_STR}");
+
+        // Act
+        let actual_range: IpRange = expected_ipv6_range_string.parse().unwrap();
+
+        // Assert
+        match actual_range {
+            IpRange::V6(range) => {
+                assert_eq!(
+                    range.clone().next().unwrap().to_string(),
+                    EXPECTED_IPV6_START_STR
+                );
+                assert_eq!(range.last().unwrap().to_string(), EXPECTED_IPV6_END_STR);
+            }
+            _ => panic!("Expected IpRange::V6"),
+        }
+    }
+
+    #[test]
+    fn test_parse_ipv6_dash() {
+        // Arrange
+        let expected_ipv6_range_string =
+            format!("{EXPECTED_IPV6_START_STR}-{EXPECTED_IPV6_END_STR}");
+
+        // Act
+        let actual_range: IpRange = expected_ipv6_range_string.parse().unwrap();
+
+        // Assert
+        match actual_range {
+            IpRange::V6(range) => {
+                assert_eq!(
+                    range.clone().next().unwrap().to_string(),
+                    EXPECTED_IPV6_START_STR
+                );
+                assert_eq!(range.last().unwrap().to_string(), EXPECTED_IPV6_END_STR);
+            }
+            _ => panic!("Expected IpRange::V6"),
+        }
+    }
+
+    #[test]
+    fn test_parse_ipv6_space() {
+        // Arrange
+        let expected_ipv6_range_string =
+            format!("{EXPECTED_IPV6_START_STR} {EXPECTED_IPV6_END_STR}");
+
+        // Act
+        let actual_range: IpRange = expected_ipv6_range_string.parse().unwrap();
+
+        // Assert
+        match actual_range {
+            IpRange::V6(range) => {
+                assert_eq!(
+                    range.clone().next().unwrap().to_string(),
+                    EXPECTED_IPV6_START_STR
+                );
+                assert_eq!(range.last().unwrap().to_string(), EXPECTED_IPV6_END_STR);
+            }
+            _ => panic!("Expected IpRange::V6"),
+        }
+    }
+
+    #[test]
+    fn test_parse_invalid_string() {
+        // Arrange
+        let expected_invalid_string: &str = "some_invalid_string";
+
+        // Act
+        let actual_result = expected_invalid_string.parse::<IpRange>();
+
+        // Assert
+        assert!(matches!(actual_result, Err(RangeParseError::Format)));
+    }
+
+    #[test]
+    fn test_parse_inconsistent_v4_v6() {
+        // Arrange
+        let expected_invalid_string = format!("{EXPECTED_IPV4_START_STR}..{EXPECTED_IPV6_END_STR}");
+
+        // Act
+        let actual_result = expected_invalid_string.parse::<IpRange>();
+
+        // Assert
+        assert!(matches!(actual_result, Err(RangeParseError::Inconsistent)));
+    }
+
+    #[test]
+    fn test_parse_inconsistent_v6_v4() {
+        // Arrange
+        let expected_invalid_string = format!("{EXPECTED_IPV6_START_STR}..{EXPECTED_IPV4_END_STR}");
+
+        // Act
+        let actual_result = expected_invalid_string.parse::<IpRange>();
+
+        // Assert
+        assert!(matches!(actual_result, Err(RangeParseError::Inconsistent)));
+    }
+
+    #[test]
+    fn test_parse_invalid_ip() {
+        // Arrange
+        let expected_invalid_string: &str = "some-10.0.0.10";
+
+        // Act
+        let actual_result = expected_invalid_string.parse::<IpRange>();
+
+        // Assert
+        assert!(matches!(actual_result, Err(RangeParseError::IpError(_))));
+    }
 }

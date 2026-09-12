@@ -14,6 +14,14 @@ impl Ipv4Range {
     pub fn new(start: IPv4, end: IPv4) -> Self {
         Self { start, end }
     }
+
+    pub fn start(&self) -> IPv4 {
+        self.start
+    }
+
+    pub fn end(&self) -> IPv4 {
+        self.end
+    }
 }
 
 impl AddressRange for Ipv4Range {

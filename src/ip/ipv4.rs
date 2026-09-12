@@ -4,7 +4,7 @@ use std::str::FromStr;
 use thiserror::Error;
 
 #[derive(Debug, Error, PartialEq)]
-pub(crate) enum IpParseError {
+pub(crate) enum Ipv4ParseError {
     #[error("Invelid IP format")]
     InvalidFormat,
     #[error("Not a valid IP address")]
@@ -33,16 +33,16 @@ impl From<u32> for IPv4 {
 }
 
 impl FromStr for IPv4 {
-    type Err = IpParseError;
+    type Err = Ipv4ParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let parts: Vec<&str> = s.split('.').collect();
         if parts.len() != 4 {
-            return Err(IpParseError::InvalidFormat);
+            return Err(Ipv4ParseError::InvalidFormat);
         }
         let octets: Vec<u8> = parts
             .iter()
-            .map(|s| s.parse::<u8>().map_err(|_| IpParseError::InvalidIp))
+            .map(|s| s.parse::<u8>().map_err(|_| Ipv4ParseError::InvalidIp))
             .collect::<Result<_, _>>()?;
 
         let address: u32 = u32::from_be_bytes(octets.try_into().unwrap());
@@ -70,7 +70,7 @@ mod tests {
         // Arrange
         // Act
         // Assert
-        test_helpers::assert_error::<IpParseError>();
+        test_helpers::assert_error::<Ipv4ParseError>();
     }
 
     #[test]
@@ -102,10 +102,10 @@ mod tests {
         let expected_ip_invalid_format = "192.168.1.1.1";
 
         // Act
-        let actual_result: Result<IPv4, IpParseError> = expected_ip_invalid_format.parse();
+        let actual_result: Result<IPv4, Ipv4ParseError> = expected_ip_invalid_format.parse();
 
         // Assert
-        assert_eq!(actual_result, Err(IpParseError::InvalidFormat));
+        assert_eq!(actual_result, Err(Ipv4ParseError::InvalidFormat));
     }
 
     #[test]
@@ -114,10 +114,10 @@ mod tests {
         let expected_invalid_ip = "192.168.not_a_number.1";
 
         // Act
-        let actual_result: Result<IPv4, IpParseError> = expected_invalid_ip.parse();
+        let actual_result: Result<IPv4, Ipv4ParseError> = expected_invalid_ip.parse();
 
         // Assert
-        assert_eq!(actual_result, Err(IpParseError::InvalidIp));
+        assert_eq!(actual_result, Err(Ipv4ParseError::InvalidIp));
     }
 
     #[test]

@@ -18,3 +18,5 @@ pub use inspector::InspectionResult;
 pub use inspector::ipv4::Ipv4InspectionResult;
 pub use inspector::ipv6::Ipv6InspectionResult;
 pub use ipnet::Ipv6Net;
+pub use range::AddressRange;
+pub use range::IpRange;
