@@ -107,7 +107,7 @@ impl FromStr for IpRange {
                         }
                     },
                 },
-                Err(ipv4_start_err) => match start.parse::<Ipv6Addr>() {
+                Err(_) => match start.parse::<Ipv6Addr>() {
                     Ok(ipv6_start) => match end.parse::<Ipv6Addr>() {
                         Ok(ipv6_end) => {
                             return Ok(IpRange::V6(Ipv6AddrRange::new(ipv6_start, ipv6_end)));
@@ -301,9 +301,33 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_invalid_ip() {
+    fn test_parse_invalid_ip_dots() {
+        // Arrange
+        let expected_invalid_string: &str = "some..10.0.0.10";
+
+        // Act
+        let actual_result = expected_invalid_string.parse::<IpRange>();
+
+        // Assert
+        assert!(matches!(actual_result, Err(RangeParseError::IpError(_))));
+    }
+
+    #[test]
+    fn test_parse_invalid_ip_dash() {
         // Arrange
         let expected_invalid_string: &str = "some-10.0.0.10";
+
+        // Act
+        let actual_result = expected_invalid_string.parse::<IpRange>();
+
+        // Assert
+        assert!(matches!(actual_result, Err(RangeParseError::IpError(_))));
+    }
+
+    #[test]
+    fn test_parse_invalid_ip_space() {
+        // Arrange
+        let expected_invalid_string: &str = "some 10.0.0.10";
 
         // Act
         let actual_result = expected_invalid_string.parse::<IpRange>();
