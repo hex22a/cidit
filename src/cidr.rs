@@ -1,6 +1,7 @@
 use ipnet::{AddrParseError, Ipv6Net};
 use ipv4::Ipv4Cidr;
 use ipv4::Ipv4CidrParseError;
+use std::fmt::Display;
 use std::str::FromStr;
 use thiserror::Error;
 
@@ -41,6 +42,19 @@ impl FromStr for Cidr {
             v4: v4_err,
             v6: v6_err,
         })
+    }
+}
+
+impl Display for Cidr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Cidr::V4(v4_cidr) => {
+                write!(f, "{}/{}", v4_cidr.addr(), v4_cidr.prefix_len())
+            }
+            Cidr::V6(v6_cidr) => {
+                write!(f, "{}/{}", v6_cidr.addr(), v6_cidr.prefix_len())
+            }
+        }
     }
 }
 

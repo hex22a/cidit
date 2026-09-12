@@ -66,7 +66,7 @@ fn main() {
             };
 
             for cidr in cidrs {
-                println!("{:?}", cidr);
+                println!("{}", cidr);
             }
         }
         None => {
