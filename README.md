@@ -98,6 +98,27 @@ cidit 10.122.33.44/24 10.255.55.66/20 2001:db8:1::ab9:c0a8:102/64 -f ndjson
 {"ip_version":"v6","cidr":"2001:db8:1::ab9:c0a8:102/64","address":"2001:db8:1::ab9:c0a8:102","prefix_length":64,"netmask":"ffff:ffff:ffff:ffff::","hostmask":"::ffff:ffff:ffff:ffff","network":"2001:db8:1::","subnet_size":"2^64"}
 ```
 
+### CIDR from a range
+
+Use **--range** option and provide a range to find a CIDR that fits the range.
+Supported formats: `ip..ip`, `ip-ip`, `ip ip`.
+By default it finds a smallest CIDR that fits the entire range.
+
+```bash
+cidit -r 10.0.0.10..10.0.0.20
+10.0.0.0/27
+```
+
+To find an exact match use **--exact** option
+
+```bash
+cidit -er 10.0.0.10..10.0.0.20
+10.0.0.10/31
+10.0.0.12/30
+10.0.0.16/30
+10.0.0.20/32
+```
+
 ### Parallel execution
 
 cidit is a single-threaded app.
