@@ -1,6 +1,6 @@
 mod print;
 
-use cidit::{AddressRange, Cidr, Inspectable, InspectionResult, IpRange};
+use cidit::{AddressRange, Cidr, IpRange};
 use clap::{Parser, ValueEnum};
 
 #[derive(ValueEnum, Clone, Debug)]
@@ -82,23 +82,15 @@ fn main() {
                 })
                 .collect::<Vec<Cidr>>();
 
-            let inspection_results: Vec<InspectionResult> = cidrs
-                .iter()
-                .map(|cidr| match cidr {
-                    Cidr::V4(v4) => v4.inspect(),
-                    Cidr::V6(v6) => v6.inspect(),
-                })
-                .collect();
-
             match args.format {
                 OutputFormat::Json => {
-                    print::print_json(inspection_results, args.pretty);
+                    print::print_json(cidrs, args.pretty);
                 }
                 OutputFormat::Table => {
-                    print::print_table(inspection_results, args.headless);
+                    print::print_table(cidrs, args.headless);
                 }
                 OutputFormat::Ndjson => {
-                    print::print_ndjson(inspection_results);
+                    print::print_ndjson(cidrs);
                 }
             }
         }

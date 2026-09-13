@@ -14,19 +14,19 @@ pub enum Ipv4ParseError {
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct IPv4(u32);
 
-pub(crate) trait Address {
+impl IPv4 {
+    pub fn new(address: u32) -> Self {
+        IPv4(address)
+    }
+}
+
+pub trait Address {
     fn addr(&self) -> u32;
 }
 
 impl Address for IPv4 {
     fn addr(&self) -> u32 {
         self.0
-    }
-}
-
-impl From<u32> for IPv4 {
-    fn from(address: u32) -> IPv4 {
-        IPv4(address)
     }
 }
 
@@ -76,7 +76,7 @@ mod tests {
         // Arrange
 
         // Act
-        let actual_ipv4: IPv4 = IPv4::from(EXPECTED_BINARY_ADDRESS);
+        let actual_ipv4: IPv4 = IPv4(EXPECTED_BINARY_ADDRESS);
 
         // Assert
         assert_eq!(actual_ipv4.addr(), EXPECTED_BINARY_ADDRESS);
@@ -85,7 +85,7 @@ mod tests {
     #[test]
     fn test_parse_ipv4_happy_path() {
         // Arrange
-        let expected_ipv4 = IPv4::from(EXPECTED_BINARY_ADDRESS);
+        let expected_ipv4 = IPv4(EXPECTED_BINARY_ADDRESS);
 
         // Act
         let actual_ipv4: IPv4 = EXPECTED_IPV4_STR.parse().unwrap();

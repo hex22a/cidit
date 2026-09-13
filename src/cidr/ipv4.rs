@@ -1,13 +1,10 @@
-use crate::inspector::Inspectable;
-use crate::inspector::InspectionResult;
-use crate::inspector::ipv4::Ipv4InspectionResult;
 use crate::ip::ipv4::Address;
 use crate::ip::ipv4::IPv4;
 use std::str::FromStr;
 use thiserror::Error;
 
 const MAX_IPV4_CIDR_PREFIX_LEN: u8 = 32;
-const POINT_TO_POINT_CIDR_PREFIX_LEN: u8 = 31;
+pub const POINT_TO_POINT_CIDR_PREFIX_LEN: u8 = 31;
 
 /// Error parsing IPv4 CIDR
 #[derive(Debug, Error, PartialEq)]
@@ -29,33 +26,33 @@ pub struct Ipv4Cidr {
 }
 
 impl Ipv4Cidr {
-    pub(crate) fn new(address: u32, prefix: u8) -> Result<Self, Ipv4CidrError> {
+    pub fn new(address: u32, prefix: u8) -> Result<Self, Ipv4CidrError> {
         if prefix > MAX_IPV4_CIDR_PREFIX_LEN {
             return Err(Ipv4CidrError::InvalidPrefix(prefix));
         }
         let mask = if prefix == 0 {
-            IPv4::from(0)
+            IPv4::new(0)
         } else {
-            IPv4::from(!0u32 << (MAX_IPV4_CIDR_PREFIX_LEN - prefix))
+            IPv4::new(!0u32 << (MAX_IPV4_CIDR_PREFIX_LEN - prefix))
         };
         Ok(Self {
-            ip: IPv4::from(address),
+            ip: IPv4::new(address),
             mask,
             prefix,
         })
     }
 
-    pub(crate) fn prefix_len(&self) -> u8 {
+    pub fn prefix_len(&self) -> u8 {
         self.prefix
     }
 
-    pub(crate) fn addr(&self) -> IPv4 {
+    pub fn addr(&self) -> IPv4 {
         self.ip
     }
 }
 
 /// IPv4 Network
-pub(crate) trait Ipv4Network {
+pub trait Ipv4Network {
     /// Gets arithmetical network address for all network masks
     /// including /31 for point-to-point connections and /32 for single host.
     /// [RFC 3021](https://datatracker.ietf.org/doc/html/rfc3021)
@@ -122,40 +119,9 @@ impl Ipv4Network for Ipv4Cidr {
     }
 }
 
-impl Inspectable for Ipv4Cidr {
-    fn inspect(&self) -> InspectionResult {
-        let prefix_len = self.prefix_len();
-        let human_readable_ip_part = self.addr().to_string();
-        let network = if prefix_len >= POINT_TO_POINT_CIDR_PREFIX_LEN {
-            String::from("")
-        } else {
-            IPv4::from(self.network_address()).to_string()
-        };
-        let first_usable_ip = self.first_usable();
-        let broadcast = if prefix_len >= POINT_TO_POINT_CIDR_PREFIX_LEN {
-            String::from("")
-        } else {
-            IPv4::from(self.broadcast_address()).to_string()
-        };
-        let last_usable_ip = self.last_usable();
-        InspectionResult::V4(Ipv4InspectionResult {
-            cidr: format!("{human_readable_ip_part}/{prefix_len}"),
-            first_usable: IPv4::from(first_usable_ip).to_string(),
-            last_usable: IPv4::from(last_usable_ip).to_string(),
-            network,
-            broadcast,
-            address: human_readable_ip_part,
-            prefix_length: prefix_len,
-        })
-    }
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::inspector::Inspectable;
-    use crate::inspector::InspectionResult;
-    use crate::inspector::ipv4::Ipv4InspectionResult;
     use crate::ip::ipv4::{Address, IPv4};
     use crate::test_helpers;
 
@@ -247,8 +213,8 @@ mod test {
         let expected_binary_mask: u32 = 0b11111111_11111111_11111111_00000000;
         let expected_cidr_string: String = format!("{EXPECTED_IPV4_STR}/{expected_prefix}");
         let expected_cidr = Ipv4Cidr {
-            ip: IPv4::from(EXPECTED_BINARY_ADDRESS),
-            mask: IPv4::from(expected_binary_mask),
+            ip: IPv4::new(EXPECTED_BINARY_ADDRESS),
+            mask: IPv4::new(expected_binary_mask),
             prefix: expected_prefix,
         };
 
@@ -292,8 +258,8 @@ mod test {
         let expected_binary_address: u32 = 0b00001010_01011000_10000111_10010000;
         let expected_network_address: u32 = 0b00001010_01011000_10000111_00000000;
         let expected_cidr = Ipv4Cidr {
-            ip: IPv4::from(expected_binary_address),
-            mask: IPv4::from(expected_binary_mask),
+            ip: IPv4::new(expected_binary_address),
+            mask: IPv4::new(expected_binary_mask),
             prefix: expected_prefix,
         };
 
@@ -312,8 +278,8 @@ mod test {
         let expected_binary_address: u32 = 0b00001010_01011000_10000111_10010000;
         let expected_broadcast_address: u32 = 0b00001010_01011000_10000111_11111111;
         let expected_cidr = Ipv4Cidr {
-            ip: IPv4::from(expected_binary_address),
-            mask: IPv4::from(expected_binary_mask),
+            ip: IPv4::new(expected_binary_address),
+            mask: IPv4::new(expected_binary_mask),
             prefix: expected_prefix,
         };
 
@@ -332,8 +298,8 @@ mod test {
         let expected_binary_address: u32 = 0b00001010_01011000_10000111_10010000;
         let expected_broadcast_address: u32 = 0b11111111_11111111_11111111_11111111;
         let expected_cidr = Ipv4Cidr {
-            ip: IPv4::from(expected_binary_address),
-            mask: IPv4::from(expected_binary_mask),
+            ip: IPv4::new(expected_binary_address),
+            mask: IPv4::new(expected_binary_mask),
             prefix: expected_prefix,
         };
 
@@ -352,8 +318,8 @@ mod test {
         let expected_binary_address: u32 = 0b00001010_01011000_10000111_10010000;
         let expected_broadcast_address: u32 = 0b00001010_01011000_10000111_10010000;
         let expected_cidr = Ipv4Cidr {
-            ip: IPv4::from(expected_binary_address),
-            mask: IPv4::from(expected_binary_mask),
+            ip: IPv4::new(expected_binary_address),
+            mask: IPv4::new(expected_binary_mask),
             prefix: expected_prefix,
         };
 
@@ -372,8 +338,8 @@ mod test {
         let expected_binary_address: u32 = 0b00001010_01011000_10000111_10010000;
         let expected_first_usable: u32 = 0b00001010_01011000_10000111_00000001;
         let expected_cidr = Ipv4Cidr {
-            ip: IPv4::from(expected_binary_address),
-            mask: IPv4::from(expected_binary_mask),
+            ip: IPv4::new(expected_binary_address),
+            mask: IPv4::new(expected_binary_mask),
             prefix: expected_prefix,
         };
 
@@ -392,8 +358,8 @@ mod test {
         let expected_binary_address: u32 = 0b00001010_01011000_10000111_10010000;
         let expected_first_usable: u32 = 0b00001010_01011000_10000111_10010000;
         let expected_cidr = Ipv4Cidr {
-            ip: IPv4::from(expected_binary_address),
-            mask: IPv4::from(expected_binary_mask),
+            ip: IPv4::new(expected_binary_address),
+            mask: IPv4::new(expected_binary_mask),
             prefix: expected_prefix,
         };
 
@@ -412,8 +378,8 @@ mod test {
         let expected_binary_address: u32 = 0b00001010_01011000_10000111_10010000;
         let expected_first_usable: u32 = 0b00001010_01011000_10000111_10010000;
         let expected_cidr = Ipv4Cidr {
-            ip: IPv4::from(expected_binary_address),
-            mask: IPv4::from(expected_binary_mask),
+            ip: IPv4::new(expected_binary_address),
+            mask: IPv4::new(expected_binary_mask),
             prefix: expected_prefix,
         };
 
@@ -432,8 +398,8 @@ mod test {
         let expected_binary_address: u32 = 0b00001010_01011000_10000111_10010000;
         let expected_last_usable: u32 = 0b00001010_01011000_10000111_11111110;
         let expected_cidr = Ipv4Cidr {
-            ip: IPv4::from(expected_binary_address),
-            mask: IPv4::from(expected_binary_mask),
+            ip: IPv4::new(expected_binary_address),
+            mask: IPv4::new(expected_binary_mask),
             prefix: expected_prefix,
         };
 
@@ -452,8 +418,8 @@ mod test {
         let expected_binary_address: u32 = 0b00001010_01011000_10000111_10010000;
         let expected_last_usable: u32 = 0b00001010_01011000_10000111_10010001;
         let expected_cidr = Ipv4Cidr {
-            ip: IPv4::from(expected_binary_address),
-            mask: IPv4::from(expected_binary_mask),
+            ip: IPv4::new(expected_binary_address),
+            mask: IPv4::new(expected_binary_mask),
             prefix: expected_prefix,
         };
 
@@ -472,8 +438,8 @@ mod test {
         let expected_binary_address: u32 = 0b00001010_01011000_10000111_10010000;
         let expected_last_usable: u32 = 0b00001010_01011000_10000111_10010000;
         let expected_cidr = Ipv4Cidr {
-            ip: IPv4::from(expected_binary_address),
-            mask: IPv4::from(expected_binary_mask),
+            ip: IPv4::new(expected_binary_address),
+            mask: IPv4::new(expected_binary_mask),
             prefix: expected_prefix,
         };
 
@@ -482,104 +448,5 @@ mod test {
 
         // Assert
         assert_eq!(actual_last_usable, expected_last_usable);
-    }
-
-    #[test]
-    fn test_inspect() {
-        // Arrange
-        let expected_prefix: u8 = 24;
-        let expected_binary_mask: u32 = 0b11111111_11111111_11111111_00000000;
-        let expected_cidr_string: String = format!("{EXPECTED_IPV4_STR}/{expected_prefix}");
-        let expected_subnet_address: String = String::from("10.22.135.0");
-        let expected_first_usable_ip: String = String::from("10.22.135.1");
-        let expected_last_usable_ip: String = String::from("10.22.135.254");
-        let expected_broadcast_ip: String = String::from("10.22.135.255");
-        let expected_inspection_result: InspectionResult =
-            InspectionResult::V4(Ipv4InspectionResult {
-                cidr: expected_cidr_string,
-                first_usable: expected_first_usable_ip,
-                last_usable: expected_last_usable_ip,
-                broadcast: expected_broadcast_ip,
-                network: expected_subnet_address,
-                address: EXPECTED_IPV4_STR.to_string(),
-                prefix_length: expected_prefix,
-            });
-        let expected_cidr = Ipv4Cidr {
-            ip: IPv4::from(EXPECTED_BINARY_ADDRESS),
-            mask: IPv4::from(expected_binary_mask),
-            prefix: expected_prefix,
-        };
-
-        // Act
-        let actual_inspection_result: InspectionResult = expected_cidr.inspect();
-
-        // Assert
-        assert_eq!(actual_inspection_result, expected_inspection_result);
-    }
-
-    #[test]
-    fn test_inspect_rfc_3021() {
-        // Arrange
-        let expected_prefix: u8 = 31;
-        let expected_binary_mask: u32 = 0b11111111_11111111_11111111_11111110;
-        let expected_cidr_string: String = format!("{EXPECTED_IPV4_STR}/{expected_prefix}");
-        let expected_subnet_address: String = String::from("");
-        let expected_first_usable_ip: String = String::from(EXPECTED_IPV4_STR);
-        let expected_last_usable_ip: String = String::from("10.22.135.145");
-        let expected_broadcast_ip: String = String::from("");
-        let expected_inspection_result: InspectionResult =
-            InspectionResult::V4(Ipv4InspectionResult {
-                cidr: expected_cidr_string,
-                first_usable: expected_first_usable_ip,
-                last_usable: expected_last_usable_ip,
-                broadcast: expected_broadcast_ip,
-                network: expected_subnet_address,
-                address: String::from(EXPECTED_IPV4_STR),
-                prefix_length: expected_prefix,
-            });
-        let expected_cidr = Ipv4Cidr {
-            ip: IPv4::from(EXPECTED_BINARY_ADDRESS),
-            mask: IPv4::from(expected_binary_mask),
-            prefix: expected_prefix,
-        };
-
-        // Act
-        let actual_inspection_result: InspectionResult = expected_cidr.inspect();
-
-        // Assert
-        assert_eq!(actual_inspection_result, expected_inspection_result);
-    }
-
-    #[test]
-    fn test_inspect_single_ip() {
-        // Arrange
-        let expected_prefix: u8 = 32;
-        let expected_binary_mask: u32 = 0b11111111_11111111_11111111_11111111;
-        let expected_cidr_string: String = format!("{EXPECTED_IPV4_STR}/{expected_prefix}");
-        let expected_subnet_address: String = String::from("");
-        let expected_first_usable_ip: String = String::from(EXPECTED_IPV4_STR);
-        let expected_last_usable_ip: String = String::from(EXPECTED_IPV4_STR);
-        let expected_broadcast_ip: String = String::from("");
-        let expected_inspection_result: InspectionResult =
-            InspectionResult::V4(Ipv4InspectionResult {
-                cidr: expected_cidr_string,
-                first_usable: expected_first_usable_ip,
-                last_usable: expected_last_usable_ip,
-                broadcast: expected_broadcast_ip,
-                network: expected_subnet_address,
-                address: String::from(EXPECTED_IPV4_STR),
-                prefix_length: expected_prefix,
-            });
-        let expected_cidr = Ipv4Cidr {
-            ip: IPv4::from(EXPECTED_BINARY_ADDRESS),
-            mask: IPv4::from(expected_binary_mask),
-            prefix: expected_prefix,
-        };
-
-        // Act
-        let actual_inspection_result: InspectionResult = expected_cidr.inspect();
-
-        // Assert
-        assert_eq!(actual_inspection_result, expected_inspection_result);
     }
 }
