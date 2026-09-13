@@ -19,7 +19,6 @@ pub enum Ipv4CidrError {
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Ipv4Cidr {
     ip: Ipv4Addr,
-    mask: Ipv4Addr,
     prefix: u8,
 }
 
@@ -28,14 +27,8 @@ impl Ipv4Cidr {
         if prefix > MAX_IPV4_CIDR_PREFIX_LEN {
             return Err(Ipv4CidrError::InvalidPrefix(prefix));
         }
-        let mask = if prefix == 0 {
-            Ipv4Addr::from_bits(0)
-        } else {
-            Ipv4Addr::from_bits(!0u32 << (MAX_IPV4_CIDR_PREFIX_LEN - prefix))
-        };
         Ok(Self {
             ip: Ipv4Addr::from_bits(address),
-            mask,
             prefix,
         })
     }
@@ -51,6 +44,9 @@ impl Ipv4Cidr {
 
 /// IPv4 Network
 pub trait Ipv4Network {
+    /// Gets network mask address
+    fn netmask(&self) -> Ipv4Addr;
+
     /// Gets arithmetical network address for all network masks
     /// including /31 for point-to-point connections and /32 for single host.
     /// [RFC 3021](https://datatracker.ietf.org/doc/html/rfc3021)
@@ -82,8 +78,17 @@ impl FromStr for Ipv4Cidr {
 }
 
 impl Ipv4Network for Ipv4Cidr {
+    fn netmask(&self) -> Ipv4Addr {
+        let mask = if self.prefix == 0 {
+            0
+        } else {
+            !0u32 << (MAX_IPV4_CIDR_PREFIX_LEN - self.prefix)
+        };
+        Ipv4Addr::from_bits(mask)
+    }
+
     fn network_address(&self) -> u32 {
-        self.ip.to_bits() & self.mask.to_bits()
+        self.ip.to_bits() & self.netmask().to_bits()
     }
 
     fn broadcast_address(&self) -> u32 {
@@ -140,7 +145,6 @@ mod test {
     fn test_construct_ipv4cidr() {
         // Arrange
         let expected_prefix: u8 = 24;
-        let expected_binary_mask: u32 = 0b11111111_11111111_11111111_00000000;
 
         // Act
         let actual_cidr: Ipv4Cidr =
@@ -148,7 +152,6 @@ mod test {
 
         // Assert
         assert_eq!(actual_cidr.ip.to_bits(), EXPECTED_BINARY_ADDRESS);
-        assert_eq!(actual_cidr.mask.to_bits(), expected_binary_mask);
         assert_eq!(actual_cidr.prefix, expected_prefix);
     }
 
@@ -156,7 +159,6 @@ mod test {
     fn test_construct_ipv4cidr_single_ip() {
         // Arrange
         let expected_prefix: u8 = 32;
-        let expected_binary_mask: u32 = 0b11111111_11111111_11111111_11111111;
 
         // Act
         let actual_cidr: Ipv4Cidr =
@@ -164,7 +166,6 @@ mod test {
 
         // Assert
         assert_eq!(actual_cidr.ip.to_bits(), EXPECTED_BINARY_ADDRESS);
-        assert_eq!(actual_cidr.mask.to_bits(), expected_binary_mask);
         assert_eq!(actual_cidr.prefix, expected_prefix);
     }
 
@@ -172,7 +173,6 @@ mod test {
     fn test_construct_ipv4cidr_entire_network() {
         // Arrange
         let expected_prefix: u8 = 0;
-        let expected_binary_mask: u32 = 0b00000000_00000000_00000000_00000000;
 
         // Act
         let actual_cidr: Ipv4Cidr =
@@ -180,7 +180,6 @@ mod test {
 
         // Assert
         assert_eq!(actual_cidr.ip.to_bits(), EXPECTED_BINARY_ADDRESS);
-        assert_eq!(actual_cidr.mask.to_bits(), expected_binary_mask);
         assert_eq!(actual_cidr.prefix, expected_prefix);
     }
 
@@ -203,11 +202,9 @@ mod test {
     fn test_parse_ipv4_cidr_success() {
         // Arrange
         let expected_prefix: u8 = 24;
-        let expected_binary_mask: u32 = 0b11111111_11111111_11111111_00000000;
         let expected_cidr_string: String = format!("{EXPECTED_IPV4_STR}/{expected_prefix}");
         let expected_cidr = Ipv4Cidr {
             ip: Ipv4Addr::from_bits(EXPECTED_BINARY_ADDRESS),
-            mask: Ipv4Addr::from_bits(expected_binary_mask),
             prefix: expected_prefix,
         };
 
@@ -244,15 +241,70 @@ mod test {
     }
 
     #[test]
+    fn test_netmask() {
+        // Arrange
+        let expected_prefix: u8 = 24;
+        let expected_binary_address: u32 = 0b00001010_01011000_10000111_10010000;
+        let expected_binary_netmask: u32 = 0b11111111_11111111_11111111_00000000;
+        let expected_netmask = Ipv4Addr::from_bits(expected_binary_netmask);
+        let cidr = Ipv4Cidr {
+            ip: Ipv4Addr::from_bits(expected_binary_address),
+            prefix: expected_prefix,
+        };
+
+        // Act
+        let actual_netmask = cidr.netmask();
+
+        // Assert
+        assert_eq!(actual_netmask, expected_netmask);
+    }
+
+    #[test]
+    fn test_netmask_entire_network() {
+        // Arrange
+        let expected_prefix: u8 = 0;
+        let expected_binary_address: u32 = 0b00001010_01011000_10000111_10010000;
+        let expected_binary_netmask: u32 = 0b00000000_00000000_00000000_00000000;
+        let expected_netmask = Ipv4Addr::from_bits(expected_binary_netmask);
+        let cidr = Ipv4Cidr {
+            ip: Ipv4Addr::from_bits(expected_binary_address),
+            prefix: expected_prefix,
+        };
+
+        // Act
+        let actual_netmask = cidr.netmask();
+
+        // Assert
+        assert_eq!(actual_netmask, expected_netmask);
+    }
+
+    #[test]
+    fn test_netmask_single_ip() {
+        // Arrange
+        let expected_prefix: u8 = 32;
+        let expected_binary_address: u32 = 0b00001010_01011000_10000111_10010000;
+        let expected_binary_netmask: u32 = 0b11111111_11111111_11111111_11111111;
+        let expected_netmask = Ipv4Addr::from_bits(expected_binary_netmask);
+        let cidr = Ipv4Cidr {
+            ip: Ipv4Addr::from_bits(expected_binary_address),
+            prefix: expected_prefix,
+        };
+
+        // Act
+        let actual_netmask = cidr.netmask();
+
+        // Assert
+        assert_eq!(actual_netmask, expected_netmask);
+    }
+
+    #[test]
     fn test_network_address() {
         // Arrange
         let expected_prefix: u8 = 24;
-        let expected_binary_mask: u32 = 0b11111111_11111111_11111111_00000000;
         let expected_binary_address: u32 = 0b00001010_01011000_10000111_10010000;
         let expected_network_address: u32 = 0b00001010_01011000_10000111_00000000;
         let expected_cidr = Ipv4Cidr {
             ip: Ipv4Addr::from_bits(expected_binary_address),
-            mask: Ipv4Addr::from_bits(expected_binary_mask),
             prefix: expected_prefix,
         };
 
@@ -267,12 +319,10 @@ mod test {
     fn test_broadcast_address() {
         // Arrange
         let expected_prefix: u8 = 24;
-        let expected_binary_mask: u32 = 0b11111111_11111111_11111111_00000000;
         let expected_binary_address: u32 = 0b00001010_01011000_10000111_10010000;
         let expected_broadcast_address: u32 = 0b00001010_01011000_10000111_11111111;
         let expected_cidr = Ipv4Cidr {
             ip: Ipv4Addr::from_bits(expected_binary_address),
-            mask: Ipv4Addr::from_bits(expected_binary_mask),
             prefix: expected_prefix,
         };
 
@@ -287,12 +337,10 @@ mod test {
     fn test_broadcast_address_entire_network() {
         // Arrange
         let expected_prefix: u8 = 0;
-        let expected_binary_mask: u32 = 0b00000000_00000000_00000000_00000000;
         let expected_binary_address: u32 = 0b00001010_01011000_10000111_10010000;
         let expected_broadcast_address: u32 = 0b11111111_11111111_11111111_11111111;
         let expected_cidr = Ipv4Cidr {
             ip: Ipv4Addr::from_bits(expected_binary_address),
-            mask: Ipv4Addr::from_bits(expected_binary_mask),
             prefix: expected_prefix,
         };
 
@@ -307,12 +355,10 @@ mod test {
     fn test_broadcast_address_single_ip() {
         // Arrange
         let expected_prefix: u8 = 32;
-        let expected_binary_mask: u32 = 0b11111111_11111111_11111111_11111111;
         let expected_binary_address: u32 = 0b00001010_01011000_10000111_10010000;
         let expected_broadcast_address: u32 = 0b00001010_01011000_10000111_10010000;
         let expected_cidr = Ipv4Cidr {
             ip: Ipv4Addr::from_bits(expected_binary_address),
-            mask: Ipv4Addr::from_bits(expected_binary_mask),
             prefix: expected_prefix,
         };
 
@@ -327,12 +373,10 @@ mod test {
     fn test_first_usable() {
         // Arrange
         let expected_prefix: u8 = 24;
-        let expected_binary_mask: u32 = 0b11111111_11111111_11111111_00000000;
         let expected_binary_address: u32 = 0b00001010_01011000_10000111_10010000;
         let expected_first_usable: u32 = 0b00001010_01011000_10000111_00000001;
         let expected_cidr = Ipv4Cidr {
             ip: Ipv4Addr::from_bits(expected_binary_address),
-            mask: Ipv4Addr::from_bits(expected_binary_mask),
             prefix: expected_prefix,
         };
 
@@ -347,12 +391,10 @@ mod test {
     fn test_first_usable_rfc_3021() {
         // Arrange
         let expected_prefix: u8 = 31;
-        let expected_binary_mask: u32 = 0b11111111_11111111_11111111_11111110;
         let expected_binary_address: u32 = 0b00001010_01011000_10000111_10010000;
         let expected_first_usable: u32 = 0b00001010_01011000_10000111_10010000;
         let expected_cidr = Ipv4Cidr {
             ip: Ipv4Addr::from_bits(expected_binary_address),
-            mask: Ipv4Addr::from_bits(expected_binary_mask),
             prefix: expected_prefix,
         };
 
@@ -367,12 +409,10 @@ mod test {
     fn test_first_usable_single_ip() {
         // Arrange
         let expected_prefix: u8 = 32;
-        let expected_binary_mask: u32 = 0b11111111_11111111_11111111_11111111;
         let expected_binary_address: u32 = 0b00001010_01011000_10000111_10010000;
         let expected_first_usable: u32 = 0b00001010_01011000_10000111_10010000;
         let expected_cidr = Ipv4Cidr {
             ip: Ipv4Addr::from_bits(expected_binary_address),
-            mask: Ipv4Addr::from_bits(expected_binary_mask),
             prefix: expected_prefix,
         };
 
@@ -387,12 +427,10 @@ mod test {
     fn test_last_usable() {
         // Arrange
         let expected_prefix: u8 = 24;
-        let expected_binary_mask: u32 = 0b11111111_11111111_11111111_00000000;
         let expected_binary_address: u32 = 0b00001010_01011000_10000111_10010000;
         let expected_last_usable: u32 = 0b00001010_01011000_10000111_11111110;
         let expected_cidr = Ipv4Cidr {
             ip: Ipv4Addr::from_bits(expected_binary_address),
-            mask: Ipv4Addr::from_bits(expected_binary_mask),
             prefix: expected_prefix,
         };
 
@@ -407,12 +445,10 @@ mod test {
     fn test_last_usable_rfc_3021() {
         // Arrange
         let expected_prefix: u8 = 31;
-        let expected_binary_mask: u32 = 0b11111111_11111111_11111111_11111110;
         let expected_binary_address: u32 = 0b00001010_01011000_10000111_10010000;
         let expected_last_usable: u32 = 0b00001010_01011000_10000111_10010001;
         let expected_cidr = Ipv4Cidr {
             ip: Ipv4Addr::from_bits(expected_binary_address),
-            mask: Ipv4Addr::from_bits(expected_binary_mask),
             prefix: expected_prefix,
         };
 
@@ -427,12 +463,10 @@ mod test {
     fn test_last_usable_single_ip() {
         // Arrange
         let expected_prefix: u8 = 32;
-        let expected_binary_mask: u32 = 0b11111111_11111111_11111111_11111111;
         let expected_binary_address: u32 = 0b00001010_01011000_10000111_10010000;
         let expected_last_usable: u32 = 0b00001010_01011000_10000111_10010000;
         let expected_cidr = Ipv4Cidr {
             ip: Ipv4Addr::from_bits(expected_binary_address),
-            mask: Ipv4Addr::from_bits(expected_binary_mask),
             prefix: expected_prefix,
         };
 
