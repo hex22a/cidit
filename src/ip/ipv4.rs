@@ -4,17 +4,15 @@ use std::str::FromStr;
 use thiserror::Error;
 
 #[derive(Debug, Error, PartialEq)]
-pub(crate) enum Ipv4ParseError {
-    #[error("Invelid IP format")]
+pub enum Ipv4ParseError {
+    #[error("Invalid IP format")]
     InvalidFormat,
     #[error("Not a valid IP address")]
     InvalidIp,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub(crate) struct IPv4 {
-    address: u32,
-}
+pub struct IPv4(u32);
 
 pub(crate) trait Address {
     fn addr(&self) -> u32;
@@ -22,13 +20,13 @@ pub(crate) trait Address {
 
 impl Address for IPv4 {
     fn addr(&self) -> u32 {
-        self.address
+        self.0
     }
 }
 
 impl From<u32> for IPv4 {
     fn from(address: u32) -> IPv4 {
-        IPv4 { address }
+        IPv4(address)
     }
 }
 
@@ -46,13 +44,13 @@ impl FromStr for IPv4 {
             .collect::<Result<_, _>>()?;
 
         let address: u32 = u32::from_be_bytes(octets.try_into().unwrap());
-        Ok(Self { address })
+        Ok(Self(address))
     }
 }
 
 impl Display for IPv4 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let bytes = self.address.to_be_bytes();
+        let bytes = self.0.to_be_bytes();
         write!(f, "{}.{}.{}.{}", bytes[0], bytes[1], bytes[2], bytes[3])
     }
 }
@@ -123,9 +121,7 @@ mod tests {
     #[test]
     fn test_human_readable() {
         // Arrange
-        let expected_ipv4 = IPv4 {
-            address: EXPECTED_BINARY_ADDRESS,
-        };
+        let expected_ipv4 = IPv4(EXPECTED_BINARY_ADDRESS);
 
         // Act
         let actual_human_readable_address: String = expected_ipv4.to_string();
