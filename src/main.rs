@@ -3,6 +3,8 @@ mod print;
 use cidit::{AddressRange, Cidr, IpRange};
 use clap::{Parser, ValueEnum};
 
+use crate::print::{CidrJsonInfo, CidrTabledInfo, RangeJsonInfo, RangeTabledInfo};
+
 #[derive(ValueEnum, Clone, Debug)]
 enum OutputFormat {
     Json,
@@ -65,8 +67,16 @@ fn main() {
                 }
             };
 
-            for cidr in cidrs {
-                println!("{}", cidr);
+            match args.format {
+                OutputFormat::Json => {
+                    print::print_json::<RangeJsonInfo>(cidrs, args.pretty);
+                }
+                OutputFormat::Table => {
+                    print::print_table::<RangeTabledInfo>(cidrs, args.headless);
+                }
+                OutputFormat::Ndjson => {
+                    print::print_ndjson::<RangeJsonInfo>(cidrs);
+                }
             }
         }
         None => {
@@ -84,13 +94,13 @@ fn main() {
 
             match args.format {
                 OutputFormat::Json => {
-                    print::print_json(cidrs, args.pretty);
+                    print::print_json::<CidrJsonInfo>(cidrs, args.pretty);
                 }
                 OutputFormat::Table => {
-                    print::print_table(cidrs, args.headless);
+                    print::print_table::<CidrTabledInfo>(cidrs, args.headless);
                 }
                 OutputFormat::Ndjson => {
-                    print::print_ndjson(cidrs);
+                    print::print_ndjson::<CidrJsonInfo>(cidrs);
                 }
             }
         }

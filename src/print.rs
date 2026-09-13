@@ -8,7 +8,7 @@ use tabled::{
 const JSON_OUTPUT_VERSION: u8 = 2;
 
 #[derive(Debug, Tabled, Default, PartialEq)]
-struct CidrTabledInfo {
+pub(crate) struct CidrTabledInfo {
     ip_ver: &'static str,
     cidr: String,
     address: String,
@@ -22,9 +22,17 @@ struct CidrTabledInfo {
     hostmask: String,
 }
 
+#[derive(Debug, Tabled, PartialEq)]
+pub(crate) struct RangeTabledInfo {
+    ip_ver: &'static str,
+    cidr: String,
+    start: String,
+    end: String,
+}
+
 /// Inspection result for IPv4
 #[derive(Debug, PartialEq, Eq, Serialize)]
-struct Ipv4CidrJsonInfo {
+pub(crate) struct Ipv4CidrJsonInfo {
     pub cidr: String,
     pub address: String,
     pub prefix_length: u8,
@@ -36,7 +44,7 @@ struct Ipv4CidrJsonInfo {
 
 /// Inspection result for IPv6
 #[derive(Debug, PartialEq, Eq, Serialize)]
-struct Ipv6CidrJsonInfo {
+pub(crate) struct Ipv6CidrJsonInfo {
     pub cidr: String,
     pub address: String,
     pub prefix_length: u8,
@@ -48,15 +56,23 @@ struct Ipv6CidrJsonInfo {
 
 #[derive(Debug, PartialEq, Eq, Serialize)]
 #[serde(tag = "ip_version", rename_all = "lowercase")]
-enum CidrJsonInfo {
+pub(crate) enum CidrJsonInfo {
     V4(Ipv4CidrJsonInfo),
     V6(Ipv6CidrJsonInfo),
 }
 
+#[derive(Debug, PartialEq, Eq, Serialize)]
+pub(crate) struct RangeJsonInfo {
+    ip_version: &'static str,
+    cidr: String,
+    start: String,
+    end: String,
+}
+
 #[derive(Serialize)]
-struct JsonOutput {
+struct JsonOutput<T> {
     version: u8,
-    data: Vec<CidrJsonInfo>,
+    data: Vec<T>,
 }
 
 impl From<Cidr> for CidrTabledInfo {
@@ -137,8 +153,49 @@ impl From<Cidr> for CidrJsonInfo {
     }
 }
 
-pub fn print_json(cidrs: Vec<Cidr>, pretty: bool) {
-    let data = cidrs.into_iter().map(CidrJsonInfo::from).collect();
+impl From<Cidr> for RangeTabledInfo {
+    fn from(value: Cidr) -> Self {
+        match value {
+            Cidr::V4(v4) => Self {
+                ip_ver: "v4",
+                cidr: format!("{}/{}", v4.addr(), v4.prefix_len()),
+                start: IPv4::new(v4.network_address()).to_string(),
+                end: IPv4::new(v4.broadcast_address()).to_string(),
+            },
+            Cidr::V6(v6) => Self {
+                ip_ver: "v6",
+                cidr: format!("{}/{}", v6.addr(), v6.prefix_len()),
+                start: v6.network().to_string(),
+                end: v6.broadcast().to_string(),
+            },
+        }
+    }
+}
+
+impl From<Cidr> for RangeJsonInfo {
+    fn from(value: Cidr) -> Self {
+        match value {
+            Cidr::V4(v4) => Self {
+                ip_version: "v4",
+                cidr: format!("{}/{}", v4.addr(), v4.prefix_len()),
+                start: IPv4::new(v4.network_address()).to_string(),
+                end: IPv4::new(v4.broadcast_address()).to_string(),
+            },
+            Cidr::V6(v6) => Self {
+                ip_version: "v6",
+                cidr: format!("{}/{}", v6.addr(), v6.prefix_len()),
+                start: v6.network().to_string(),
+                end: v6.broadcast().to_string(),
+            },
+        }
+    }
+}
+
+pub fn print_json<T>(cidrs: Vec<Cidr>, pretty: bool)
+where
+    T: Serialize + From<Cidr>,
+{
+    let data = cidrs.into_iter().map(T::from).collect();
     let json_output = JsonOutput {
         version: JSON_OUTPUT_VERSION,
         data,
@@ -149,15 +206,21 @@ pub fn print_json(cidrs: Vec<Cidr>, pretty: bool) {
     }
 }
 
-pub fn print_ndjson(cidrs: Vec<Cidr>) {
+pub fn print_ndjson<T>(cidrs: Vec<Cidr>)
+where
+    T: Serialize + From<Cidr>,
+{
     cidrs
         .into_iter()
-        .map(CidrJsonInfo::from)
+        .map(T::from)
         .for_each(|item| println!("{}", serde_json::to_string(&item).unwrap()));
 }
 
-pub fn print_table(results: Vec<Cidr>, headless: bool) {
-    let rows: Vec<CidrTabledInfo> = results.into_iter().map(CidrTabledInfo::from).collect();
+pub fn print_table<T>(results: Vec<Cidr>, headless: bool)
+where
+    T: Tabled + From<Cidr>,
+{
+    let rows: Vec<T> = results.into_iter().map(T::from).collect();
     let mut table = Table::new(rows);
     table.with(Style::blank());
     if headless {
@@ -301,6 +364,96 @@ mod tests {
 
         // Act
         let actual_cidr_info = CidrTabledInfo::from(Cidr::V6(expected_ipv6_cidr));
+
+        // Assert
+        assert_eq!(actual_cidr_info, expected_cidr_info);
+    }
+
+    #[test]
+    fn test_range_tabled_info_from_cidr_v4() {
+        // Arrange
+        let expected_prefix: u8 = 24;
+        let expected_cidr_string: String = format!("{EXPECTED_IPV4_STR}/{expected_prefix}");
+        let expected_subnet_address: String = String::from("10.22.135.0");
+        let expected_broadcast_ip: String = String::from("10.22.135.255");
+        let expected_cidr_info = RangeTabledInfo {
+            ip_ver: "v4",
+            cidr: expected_cidr_string,
+            start: expected_subnet_address,
+            end: expected_broadcast_ip,
+        };
+
+        let expected_cidr = Ipv4Cidr::new(EXPECTED_BINARY_ADDRESS, expected_prefix).unwrap();
+
+        // Act
+        let actual_cidr_info = RangeTabledInfo::from(Cidr::V4(expected_cidr));
+
+        // Assert
+        assert_eq!(actual_cidr_info, expected_cidr_info);
+    }
+
+    #[test]
+    fn test_range_tabled_info_from_cidr_v6() {
+        // Arrange
+        let expected_prefix_len: u8 = 64;
+        let expected_cidr_str: String = format!("{EXPECTED_IPV6_STR}/{expected_prefix_len}");
+        let expected_cidr_info = RangeTabledInfo {
+            ip_ver: "v6",
+            cidr: expected_cidr_str,
+            start: String::from("2001:db8:1::"),
+            end: String::from("2001:db8:1:0:ffff:ffff:ffff:ffff"),
+        };
+
+        let expected_cidr: Ipv6Net =
+            Ipv6Net::new(EXPECTED_IPV6_STR.parse().unwrap(), expected_prefix_len).unwrap();
+
+        // Act
+        let actual_cidr_info = RangeTabledInfo::from(Cidr::V6(expected_cidr));
+
+        // Assert
+        assert_eq!(actual_cidr_info, expected_cidr_info);
+    }
+
+    #[test]
+    fn test_range_json_info_from_cidr_v4() {
+        // Arrange
+        let expected_prefix: u8 = 24;
+        let expected_cidr_string: String = format!("{EXPECTED_IPV4_STR}/{expected_prefix}");
+        let expected_subnet_address: String = String::from("10.22.135.0");
+        let expected_broadcast_ip: String = String::from("10.22.135.255");
+        let expected_cidr_info = RangeJsonInfo {
+            ip_version: "v4",
+            cidr: expected_cidr_string,
+            start: expected_subnet_address,
+            end: expected_broadcast_ip,
+        };
+
+        let expected_cidr = Ipv4Cidr::new(EXPECTED_BINARY_ADDRESS, expected_prefix).unwrap();
+
+        // Act
+        let actual_cidr_info = RangeJsonInfo::from(Cidr::V4(expected_cidr));
+
+        // Assert
+        assert_eq!(actual_cidr_info, expected_cidr_info);
+    }
+
+    #[test]
+    fn test_range_json_info_from_cidr_v6() {
+        // Arrange
+        let expected_prefix_len: u8 = 64;
+        let expected_cidr_str: String = format!("{EXPECTED_IPV6_STR}/{expected_prefix_len}");
+        let expected_cidr_info = RangeJsonInfo {
+            ip_version: "v6",
+            cidr: expected_cidr_str,
+            start: String::from("2001:db8:1::"),
+            end: String::from("2001:db8:1:0:ffff:ffff:ffff:ffff"),
+        };
+
+        let expected_cidr: Ipv6Net =
+            Ipv6Net::new(EXPECTED_IPV6_STR.parse().unwrap(), expected_prefix_len).unwrap();
+
+        // Act
+        let actual_cidr_info = RangeJsonInfo::from(Cidr::V6(expected_cidr));
 
         // Assert
         assert_eq!(actual_cidr_info, expected_cidr_info);
