@@ -1,6 +1,6 @@
 use ipnet::{AddrParseError, Ipv6Net};
 use ipv4::Ipv4Cidr;
-use ipv4::Ipv4CidrParseError;
+use ipv4::Ipv4CidrError;
 use std::fmt::Display;
 use std::str::FromStr;
 use thiserror::Error;
@@ -12,7 +12,7 @@ pub mod ipv6;
 pub enum CidrParseError {
     #[error("Not a valid CIDR (v4 or v6)")]
     Neither {
-        v4: Ipv4CidrParseError,
+        v4: Ipv4CidrError,
         v6: AddrParseError,
     },
 }

@@ -11,15 +11,11 @@ const POINT_TO_POINT_CIDR_PREFIX_LEN: u8 = 31;
 
 /// Error parsing IPv4 CIDR
 #[derive(Debug, Error, PartialEq)]
-pub enum Ipv4CidrParseError {
+pub enum Ipv4CidrError {
     #[error("Invalid CIDR format (expected x.x.x.x/x)")]
     InvalidFormat,
     #[error("Invalid CIDR")]
     InvalidCidr,
-}
-
-#[derive(Debug, Error, PartialEq)]
-pub(crate) enum Ipv4CidrPartsError {
     #[error("Invalid CIDR prefix: {0} (expected <= {max} )", max = MAX_IPV4_CIDR_PREFIX_LEN)]
     InvalidPrefix(u8),
 }
@@ -32,9 +28,30 @@ pub struct Ipv4Cidr {
     prefix: u8,
 }
 
-pub(crate) struct Ipv4CidrParts {
-    pub(crate) address: u32,
-    pub(crate) prefix: u8,
+impl Ipv4Cidr {
+    pub(crate) fn new(address: u32, prefix: u8) -> Result<Self, Ipv4CidrError> {
+        if prefix > MAX_IPV4_CIDR_PREFIX_LEN {
+            return Err(Ipv4CidrError::InvalidPrefix(prefix));
+        }
+        let mask = if prefix == 0 {
+            IPv4::from(0)
+        } else {
+            IPv4::from(!0u32 << (MAX_IPV4_CIDR_PREFIX_LEN - prefix))
+        };
+        Ok(Self {
+            ip: IPv4::from(address),
+            mask,
+            prefix,
+        })
+    }
+
+    pub(crate) fn prefix_len(&self) -> u8 {
+        self.prefix
+    }
+
+    pub(crate) fn addr(&self) -> IPv4 {
+        self.ip
+    }
 }
 
 /// IPv4 Network
@@ -58,42 +75,18 @@ pub(crate) trait Ipv4Network {
     fn last_usable(&self) -> u32;
 }
 
-impl TryFrom<Ipv4CidrParts> for Ipv4Cidr {
-    type Error = Ipv4CidrPartsError;
-
-    fn try_from(value: Ipv4CidrParts) -> Result<Self, Self::Error> {
-        if value.prefix > MAX_IPV4_CIDR_PREFIX_LEN {
-            return Err(Ipv4CidrPartsError::InvalidPrefix(value.prefix));
-        }
-        let mask = if value.prefix == 0 {
-            IPv4::from(0)
-        } else {
-            IPv4::from(!0u32 << (MAX_IPV4_CIDR_PREFIX_LEN - value.prefix))
-        };
-        Ok(Self {
-            ip: IPv4::from(value.address),
-            mask,
-            prefix: value.prefix,
-        })
-    }
-}
-
 impl FromStr for Ipv4Cidr {
-    type Err = Ipv4CidrParseError;
+    type Err = Ipv4CidrError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (ip_str, prefix) = s.split_once('/').ok_or(Ipv4CidrParseError::InvalidFormat)?;
+        let (ip_str, prefix) = s.split_once('/').ok_or(Ipv4CidrError::InvalidFormat)?;
         let ip: IPv4 = ip_str
             .parse::<IPv4>()
-            .map_err(|_| Ipv4CidrParseError::InvalidCidr)?;
+            .map_err(|_| Ipv4CidrError::InvalidCidr)?;
         let prefix: u8 = prefix
             .parse::<u8>()
-            .map_err(|_| Ipv4CidrParseError::InvalidCidr)?;
-        let cidr_parts: Ipv4CidrParts = Ipv4CidrParts {
-            address: ip.addr(),
-            prefix,
-        };
-        Self::try_from(cidr_parts).map_err(|_| Ipv4CidrParseError::InvalidCidr)
+            .map_err(|_| Ipv4CidrError::InvalidCidr)?;
+        Self::new(ip.addr(), prefix)
     }
 }
 
@@ -126,16 +119,6 @@ impl Ipv4Network for Ipv4Cidr {
         } else {
             broadcast_address - 1
         }
-    }
-}
-
-impl Ipv4Cidr {
-    pub(crate) fn prefix_len(&self) -> u8 {
-        self.prefix
-    }
-
-    pub(crate) fn addr(&self) -> IPv4 {
-        self.ip
     }
 }
 
@@ -184,17 +167,8 @@ mod test {
         // Arrange
         // Act
         // Assert
-        test_helpers::assert_error::<Ipv4CidrParseError>();
+        test_helpers::assert_error::<Ipv4CidrError>();
     }
-
-    #[test]
-    fn test_cidr_parts_error_type() {
-        // Arrange
-        // Act
-        // Assert
-        test_helpers::assert_error::<Ipv4CidrPartsError>();
-    }
-
     #[test]
     fn test_ipv4_cidr_type() {
         // Arrange
@@ -204,18 +178,14 @@ mod test {
     }
 
     #[test]
-    fn test_ipv4cidr_try_from_success() {
+    fn test_construct_ipv4cidr() {
         // Arrange
         let expected_prefix: u8 = 24;
-        let expected_cidr_parts: Ipv4CidrParts = Ipv4CidrParts {
-            address: EXPECTED_BINARY_ADDRESS,
-            prefix: expected_prefix,
-        };
-
         let expected_binary_mask: u32 = 0b11111111_11111111_11111111_00000000;
 
         // Act
-        let actual_cidr: Ipv4Cidr = Ipv4Cidr::try_from(expected_cidr_parts).unwrap();
+        let actual_cidr: Ipv4Cidr =
+            Ipv4Cidr::new(EXPECTED_BINARY_ADDRESS, expected_prefix).unwrap();
 
         // Assert
         assert_eq!(actual_cidr.ip.addr(), EXPECTED_BINARY_ADDRESS);
@@ -224,18 +194,14 @@ mod test {
     }
 
     #[test]
-    fn test_ipv4cidr_try_from_single_ip() {
+    fn test_construct_ipv4cidr_single_ip() {
         // Arrange
         let expected_prefix: u8 = 32;
-        let expected_cidr_parts: Ipv4CidrParts = Ipv4CidrParts {
-            address: EXPECTED_BINARY_ADDRESS,
-            prefix: expected_prefix,
-        };
-
         let expected_binary_mask: u32 = 0b11111111_11111111_11111111_11111111;
 
         // Act
-        let actual_cidr: Ipv4Cidr = Ipv4Cidr::try_from(expected_cidr_parts).unwrap();
+        let actual_cidr: Ipv4Cidr =
+            Ipv4Cidr::new(EXPECTED_BINARY_ADDRESS, expected_prefix).unwrap();
 
         // Assert
         assert_eq!(actual_cidr.ip.addr(), EXPECTED_BINARY_ADDRESS);
@@ -244,18 +210,14 @@ mod test {
     }
 
     #[test]
-    fn test_ipv4cidr_try_from_entire_network() {
+    fn test_construct_ipv4cidr_entire_network() {
         // Arrange
         let expected_prefix: u8 = 0;
-        let expected_cidr_parts: Ipv4CidrParts = Ipv4CidrParts {
-            address: EXPECTED_BINARY_ADDRESS,
-            prefix: expected_prefix,
-        };
-
         let expected_binary_mask: u32 = 0b00000000_00000000_00000000_00000000;
 
         // Act
-        let actual_cidr: Ipv4Cidr = Ipv4Cidr::try_from(expected_cidr_parts).unwrap();
+        let actual_cidr: Ipv4Cidr =
+            Ipv4Cidr::new(EXPECTED_BINARY_ADDRESS, expected_prefix).unwrap();
 
         // Assert
         assert_eq!(actual_cidr.ip.addr(), EXPECTED_BINARY_ADDRESS);
@@ -264,23 +226,18 @@ mod test {
     }
 
     #[test]
-    fn test_ipv4cidr_try_from_wrong_prefix() {
+    fn test_construct_ipv4cidr_wrong_prefix() {
         // Arrange
         let expected_prefix: u8 = 33;
-        let expected_cidr_parts: Ipv4CidrParts = Ipv4CidrParts {
-            address: EXPECTED_BINARY_ADDRESS,
-            prefix: expected_prefix,
-        };
 
         // Act
-        let actual_result: Result<Ipv4Cidr, Ipv4CidrPartsError> =
-            Ipv4Cidr::try_from(expected_cidr_parts);
+        let actual_result = Ipv4Cidr::new(EXPECTED_BINARY_ADDRESS, expected_prefix);
 
         // Assert
-        assert_eq!(
+        assert!(matches!(
             actual_result,
-            Err(Ipv4CidrPartsError::InvalidPrefix(expected_prefix))
-        );
+            Err(Ipv4CidrError::InvalidPrefix(_))
+        ));
     }
 
     #[test]
@@ -307,10 +264,10 @@ mod test {
         // Arrange
 
         // Act
-        let actual_result: Result<Ipv4Cidr, Ipv4CidrParseError> = EXPECTED_IPV4_STR.parse();
+        let actual_result: Result<Ipv4Cidr, Ipv4CidrError> = EXPECTED_IPV4_STR.parse();
 
         // Assert
-        assert_eq!(actual_result, Err(Ipv4CidrParseError::InvalidFormat));
+        assert_eq!(actual_result, Err(Ipv4CidrError::InvalidFormat));
     }
 
     #[test]
@@ -321,10 +278,10 @@ mod test {
         let expected_cidr_string: String = format!("{expected_invalid_ip}/{expected_prefix}");
 
         // Act
-        let actual_result: Result<Ipv4Cidr, Ipv4CidrParseError> = expected_cidr_string.parse();
+        let actual_result: Result<Ipv4Cidr, Ipv4CidrError> = expected_cidr_string.parse();
 
         // Assert
-        assert_eq!(actual_result, Err(Ipv4CidrParseError::InvalidCidr));
+        assert_eq!(actual_result, Err(Ipv4CidrError::InvalidCidr));
     }
 
     #[test]

@@ -1,6 +1,6 @@
 use crate::{
     Cidr, Ipv4Cidr,
-    cidr::ipv4::{Ipv4CidrParts, Ipv4Network},
+    cidr::ipv4::Ipv4Network,
     ip::ipv4::{Address, IPv4},
     range::AddressRange,
 };
@@ -29,12 +29,8 @@ impl AddressRange for Ipv4Range {
         let diff = self.start.addr() ^ self.end.addr();
         let prefix: u8 = diff.leading_zeros() as u8;
         Cidr::V4(
-            Ipv4CidrParts {
-                address: self.start.addr() & !diff,
-                prefix,
-            }
-            .try_into()
-            .expect("prefix is always less or equal to 32"),
+            Ipv4Cidr::new(self.start.addr() & !diff, prefix)
+                .expect("prefix is always less or equal to 32"),
         )
     }
 
@@ -45,12 +41,8 @@ impl AddressRange for Ipv4Range {
 
         while start_addr <= end_addr {
             let mut prefix = 32u8;
-            let mut guess_cidr: Ipv4Cidr = Ipv4CidrParts {
-                address: start_addr,
-                prefix,
-            }
-            .try_into()
-            .expect("prefix is always less or equal to 32");
+            let mut guess_cidr: Ipv4Cidr =
+                Ipv4Cidr::new(start_addr, prefix).expect("prefix is always less or equal to 32");
             let mut next_guess_cidr = guess_cidr;
 
             while next_guess_cidr.network_address() == start_addr
@@ -63,12 +55,8 @@ impl AddressRange for Ipv4Range {
                 }
 
                 prefix -= 1;
-                next_guess_cidr = Ipv4CidrParts {
-                    address: start_addr,
-                    prefix,
-                }
-                .try_into()
-                .expect("prefix is always less or equal to 32");
+                next_guess_cidr = Ipv4Cidr::new(start_addr, prefix)
+                    .expect("prefix is always less or equal to 32");
             }
 
             result.push(Cidr::V4(guess_cidr));
