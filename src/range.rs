@@ -1,13 +1,12 @@
-use std::{net::Ipv6Addr, str::FromStr};
+use std::{
+    net::{AddrParseError, Ipv4Addr, Ipv6Addr},
+    str::FromStr,
+};
 
 use ipnet::Ipv6AddrRange;
 use thiserror::Error;
 
-use crate::{
-    Cidr,
-    ip::{IpParseError, ipv4::IPv4},
-    range::ipv4::Ipv4Range,
-};
+use crate::{Cidr, range::ipv4::Ipv4Range};
 
 mod ipv4;
 mod ipv6;
@@ -15,7 +14,7 @@ mod ipv6;
 #[derive(Debug, Error)]
 pub enum RangeParseError {
     #[error("One or both provided IPs are invalid: {0}")]
-    IpError(IpParseError),
+    IpError(AddrParseError),
     #[error("Invalid range format. Supported formats: ip..ip, ip-ip, \"ip ip\"")]
     Format,
     #[error("Inconsistent IP versions. Both IPs in range should be either v4 or v6")]
@@ -37,13 +36,13 @@ impl FromStr for IpRange {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if let Some((start, end)) = s.split_once("..") {
-            match start.parse::<IPv4>() {
-                Ok(ipv4_start) => match end.parse::<IPv4>() {
+            match start.parse::<Ipv4Addr>() {
+                Ok(ipv4_start) => match end.parse::<Ipv4Addr>() {
                     Ok(ipv4_end) => return Ok(IpRange::V4(Ipv4Range::new(ipv4_start, ipv4_end))),
                     Err(ipv4_end_err) => match end.parse::<Ipv6Addr>() {
                         Ok(_) => return Err(RangeParseError::Inconsistent),
                         Err(_) => {
-                            return Err(RangeParseError::IpError(IpParseError::V4(ipv4_end_err)));
+                            return Err(RangeParseError::IpError(ipv4_end_err));
                         }
                     },
                 },
@@ -52,28 +51,26 @@ impl FromStr for IpRange {
                         Ok(ipv6_end) => {
                             return Ok(IpRange::V6(Ipv6AddrRange::new(ipv6_start, ipv6_end)));
                         }
-                        Err(ipv6_end_err) => match end.parse::<IPv4>() {
+                        Err(ipv6_end_err) => match end.parse::<Ipv4Addr>() {
                             Ok(_) => return Err(RangeParseError::Inconsistent),
                             Err(_) => {
-                                return Err(RangeParseError::IpError(IpParseError::V6(
-                                    ipv6_end_err,
-                                )));
+                                return Err(RangeParseError::IpError(ipv6_end_err));
                             }
                         },
                     },
                     Err(ipv6_start_err) => {
-                        return Err(RangeParseError::IpError(IpParseError::V6(ipv6_start_err)));
+                        return Err(RangeParseError::IpError(ipv6_start_err));
                     }
                 },
             };
         } else if let Some((start, end)) = s.split_once("-") {
-            match start.parse::<IPv4>() {
-                Ok(ipv4_start) => match end.parse::<IPv4>() {
+            match start.parse::<Ipv4Addr>() {
+                Ok(ipv4_start) => match end.parse::<Ipv4Addr>() {
                     Ok(ipv4_end) => return Ok(IpRange::V4(Ipv4Range::new(ipv4_start, ipv4_end))),
                     Err(ipv4_end_err) => match end.parse::<Ipv6Addr>() {
                         Ok(_) => return Err(RangeParseError::Inconsistent),
                         Err(_) => {
-                            return Err(RangeParseError::IpError(IpParseError::V4(ipv4_end_err)));
+                            return Err(RangeParseError::IpError(ipv4_end_err));
                         }
                     },
                 },
@@ -82,28 +79,26 @@ impl FromStr for IpRange {
                         Ok(ipv6_end) => {
                             return Ok(IpRange::V6(Ipv6AddrRange::new(ipv6_start, ipv6_end)));
                         }
-                        Err(ipv6_end_err) => match end.parse::<IPv4>() {
+                        Err(ipv6_end_err) => match end.parse::<Ipv4Addr>() {
                             Ok(_) => return Err(RangeParseError::Inconsistent),
                             Err(_) => {
-                                return Err(RangeParseError::IpError(IpParseError::V6(
-                                    ipv6_end_err,
-                                )));
+                                return Err(RangeParseError::IpError(ipv6_end_err));
                             }
                         },
                     },
                     Err(ipv6_start_err) => {
-                        return Err(RangeParseError::IpError(IpParseError::V6(ipv6_start_err)));
+                        return Err(RangeParseError::IpError(ipv6_start_err));
                     }
                 },
             };
         } else if let Some((start, end)) = s.split_once(" ") {
-            match start.parse::<IPv4>() {
-                Ok(ipv4_start) => match end.parse::<IPv4>() {
+            match start.parse::<Ipv4Addr>() {
+                Ok(ipv4_start) => match end.parse::<Ipv4Addr>() {
                     Ok(ipv4_end) => return Ok(IpRange::V4(Ipv4Range::new(ipv4_start, ipv4_end))),
                     Err(ipv4_end_err) => match end.parse::<Ipv6Addr>() {
                         Ok(_) => return Err(RangeParseError::Inconsistent),
                         Err(_) => {
-                            return Err(RangeParseError::IpError(IpParseError::V4(ipv4_end_err)));
+                            return Err(RangeParseError::IpError(ipv4_end_err));
                         }
                     },
                 },
@@ -112,17 +107,15 @@ impl FromStr for IpRange {
                         Ok(ipv6_end) => {
                             return Ok(IpRange::V6(Ipv6AddrRange::new(ipv6_start, ipv6_end)));
                         }
-                        Err(ipv6_end_err) => match end.parse::<IPv4>() {
+                        Err(ipv6_end_err) => match end.parse::<Ipv4Addr>() {
                             Ok(_) => return Err(RangeParseError::Inconsistent),
                             Err(_) => {
-                                return Err(RangeParseError::IpError(IpParseError::V6(
-                                    ipv6_end_err,
-                                )));
+                                return Err(RangeParseError::IpError(ipv6_end_err));
                             }
                         },
                     },
                     Err(ipv6_start_err) => {
-                        return Err(RangeParseError::IpError(IpParseError::V6(ipv6_start_err)));
+                        return Err(RangeParseError::IpError(ipv6_start_err));
                     }
                 },
             };

@@ -1,4 +1,6 @@
-use cidit::{Cidr, IPv4, Ipv4Network, POINT_TO_POINT_CIDR_PREFIX_LEN, SubnetSize};
+use std::net::Ipv4Addr;
+
+use cidit::{Cidr, Ipv4Network, POINT_TO_POINT_CIDR_PREFIX_LEN, SubnetSize};
 use serde::Serialize;
 use tabled::{
     Table, Tabled,
@@ -82,20 +84,20 @@ impl From<Cidr> for CidrTabledInfo {
                 let network = if v4.prefix_len() >= POINT_TO_POINT_CIDR_PREFIX_LEN {
                     String::from("")
                 } else {
-                    IPv4::new(v4.network_address()).to_string()
+                    Ipv4Addr::from_bits(v4.network_address()).to_string()
                 };
                 let broadcast = if v4.prefix_len() >= POINT_TO_POINT_CIDR_PREFIX_LEN {
                     String::from("")
                 } else {
-                    IPv4::new(v4.broadcast_address()).to_string()
+                    Ipv4Addr::from_bits(v4.broadcast_address()).to_string()
                 };
                 CidrTabledInfo {
                     ip_ver: "v4",
                     cidr: format!("{}/{}", v4.addr(), v4.prefix_len()),
                     address: v4.addr().to_string(),
                     prefix: v4.prefix_len(),
-                    first_usable: IPv4::new(v4.first_usable()).to_string(),
-                    last_usable: IPv4::new(v4.last_usable()).to_string(),
+                    first_usable: Ipv4Addr::from_bits(v4.first_usable()).to_string(),
+                    last_usable: Ipv4Addr::from_bits(v4.last_usable()).to_string(),
                     network,
                     broadcast,
                     ..Default::default()
@@ -123,19 +125,19 @@ impl From<Cidr> for CidrJsonInfo {
                 let network = if v4.prefix_len() >= POINT_TO_POINT_CIDR_PREFIX_LEN {
                     String::from("")
                 } else {
-                    IPv4::new(v4.network_address()).to_string()
+                    Ipv4Addr::from_bits(v4.network_address()).to_string()
                 };
                 let broadcast = if v4.prefix_len() >= POINT_TO_POINT_CIDR_PREFIX_LEN {
                     String::from("")
                 } else {
-                    IPv4::new(v4.broadcast_address()).to_string()
+                    Ipv4Addr::from_bits(v4.broadcast_address()).to_string()
                 };
                 CidrJsonInfo::V4(Ipv4CidrJsonInfo {
                     cidr: format!("{}/{}", v4.addr(), v4.prefix_len()),
                     address: v4.addr().to_string(),
                     prefix_length: v4.prefix_len(),
-                    first_usable: IPv4::new(v4.first_usable()).to_string(),
-                    last_usable: IPv4::new(v4.last_usable()).to_string(),
+                    first_usable: Ipv4Addr::from_bits(v4.first_usable()).to_string(),
+                    last_usable: Ipv4Addr::from_bits(v4.last_usable()).to_string(),
                     network,
                     broadcast,
                 })
@@ -159,8 +161,8 @@ impl From<Cidr> for RangeTabledInfo {
             Cidr::V4(v4) => Self {
                 ip_ver: "v4",
                 cidr: format!("{}/{}", v4.addr(), v4.prefix_len()),
-                start: IPv4::new(v4.network_address()).to_string(),
-                end: IPv4::new(v4.broadcast_address()).to_string(),
+                start: Ipv4Addr::from_bits(v4.network_address()).to_string(),
+                end: Ipv4Addr::from_bits(v4.broadcast_address()).to_string(),
             },
             Cidr::V6(v6) => Self {
                 ip_ver: "v6",
@@ -178,8 +180,8 @@ impl From<Cidr> for RangeJsonInfo {
             Cidr::V4(v4) => Self {
                 ip_version: "v4",
                 cidr: format!("{}/{}", v4.addr(), v4.prefix_len()),
-                start: IPv4::new(v4.network_address()).to_string(),
-                end: IPv4::new(v4.broadcast_address()).to_string(),
+                start: Ipv4Addr::from_bits(v4.network_address()).to_string(),
+                end: Ipv4Addr::from_bits(v4.broadcast_address()).to_string(),
             },
             Cidr::V6(v6) => Self {
                 ip_version: "v6",

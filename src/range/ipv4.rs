@@ -1,43 +1,40 @@
-use crate::{
-    Cidr, Ipv4Cidr,
-    cidr::ipv4::Ipv4Network,
-    ip::ipv4::{Address, IPv4},
-    range::AddressRange,
-};
+use std::net::Ipv4Addr;
+
+use crate::{Cidr, Ipv4Cidr, net::ipv4::Ipv4Network, range::AddressRange};
 
 pub struct Ipv4Range {
-    start: IPv4,
-    end: IPv4,
+    start: Ipv4Addr,
+    end: Ipv4Addr,
 }
 
 impl Ipv4Range {
-    pub fn new(start: IPv4, end: IPv4) -> Self {
+    pub fn new(start: Ipv4Addr, end: Ipv4Addr) -> Self {
         Self { start, end }
     }
 
-    pub fn start(&self) -> IPv4 {
+    pub fn start(&self) -> Ipv4Addr {
         self.start
     }
 
-    pub fn end(&self) -> IPv4 {
+    pub fn end(&self) -> Ipv4Addr {
         self.end
     }
 }
 
 impl AddressRange for Ipv4Range {
     fn smallest_common_cidr(&self) -> Cidr {
-        let diff = self.start.addr() ^ self.end.addr();
+        let diff = self.start.to_bits() ^ self.end.to_bits();
         let prefix: u8 = diff.leading_zeros() as u8;
         Cidr::V4(
-            Ipv4Cidr::new(self.start.addr() & !diff, prefix)
+            Ipv4Cidr::new(self.start.to_bits() & !diff, prefix)
                 .expect("prefix is always less or equal to 32"),
         )
     }
 
     fn exact_fit(&self) -> Vec<Cidr> {
         let mut result: Vec<Cidr> = Vec::new();
-        let mut start_addr = self.start.addr();
-        let end_addr = self.end.addr();
+        let mut start_addr = self.start.to_bits();
+        let end_addr = self.end.to_bits();
 
         while start_addr <= end_addr {
             let mut prefix = 32u8;
