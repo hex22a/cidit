@@ -1,21 +1,26 @@
-use std::{net::Ipv6Addr, str::FromStr};
+use std::{
+    net::{AddrParseError, Ipv6Addr},
+    str::FromStr,
+};
 
 use thiserror::Error;
 
 const MAX_IPV6_CIDR_PREFIX_LEN: u8 = 128;
 const MIN_REASONABLE_PREFIX_LEN: u8 = 96;
 
-/// Error parsing IPv4 CIDR
 #[derive(Debug, Error, PartialEq)]
 pub enum Ipv6CidrError {
-    #[error("Invalid CIDR format")]
-    InvalidFormat,
-    #[error("Invalid CIDR")]
-    InvalidCidr,
+    #[error("Invalid CIDR format (expected: ::/x)")]
+    Format,
+    #[error("Failed to parse address: {0}")]
+    IpParse(AddrParseError),
+    #[error("Prefix is not a number")]
+    PrefixNan,
     #[error("Invalid CIDR prefix: {0} (expected <= {max} )", max = MAX_IPV6_CIDR_PREFIX_LEN)]
-    InvalidPrefix(u8),
+    PrefixLen(u8),
 }
 
+/// Internal representation of IPv6 CIDR
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Ipv6Cidr {
     ip: Ipv6Addr,
@@ -25,7 +30,7 @@ pub struct Ipv6Cidr {
 impl Ipv6Cidr {
     pub fn new(address: u128, prefix: u8) -> Result<Self, Ipv6CidrError> {
         if prefix > MAX_IPV6_CIDR_PREFIX_LEN {
-            return Err(Ipv6CidrError::InvalidPrefix(prefix));
+            return Err(Ipv6CidrError::PrefixLen(prefix));
         }
         Ok(Self {
             ip: Ipv6Addr::from_bits(address),
@@ -38,9 +43,9 @@ impl FromStr for Ipv6Cidr {
     type Err = Ipv6CidrError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (ip, prefix) = s.split_once('/').ok_or(Ipv6CidrError::InvalidFormat)?;
-        let ip: Ipv6Addr = ip.parse().map_err(|_| Ipv6CidrError::InvalidCidr)?;
-        let prefix: u8 = prefix.parse().map_err(|_| Ipv6CidrError::InvalidCidr)?;
+        let (ip, prefix) = s.split_once('/').ok_or(Ipv6CidrError::Format)?;
+        let ip: Ipv6Addr = ip.parse().map_err(Ipv6CidrError::IpParse)?;
+        let prefix: u8 = prefix.parse().map_err(|_| Ipv6CidrError::PrefixNan)?;
         Self::new(ip.to_bits(), prefix)
     }
 }
@@ -171,10 +176,7 @@ mod test {
         let actual_result = Ipv6Cidr::new(expected_binary_address, expected_prefix);
 
         // Assert
-        assert!(matches!(
-            actual_result,
-            Err(Ipv6CidrError::InvalidPrefix(_))
-        ));
+        assert!(matches!(actual_result, Err(Ipv6CidrError::PrefixLen(_))));
     }
 
     #[test]
@@ -204,7 +206,7 @@ mod test {
         let actual_result: Result<Ipv6Cidr, Ipv6CidrError> = EXPECTED_IPV6_STR.parse();
 
         // Assert
-        assert_eq!(actual_result, Err(Ipv6CidrError::InvalidFormat));
+        assert_eq!(actual_result, Err(Ipv6CidrError::Format));
     }
 
     #[test]
@@ -218,7 +220,19 @@ mod test {
         let actual_result: Result<Ipv6Cidr, Ipv6CidrError> = expected_cidr_string.parse();
 
         // Assert
-        assert_eq!(actual_result, Err(Ipv6CidrError::InvalidCidr));
+        assert!(matches!(actual_result, Err(Ipv6CidrError::IpParse(_))));
+    }
+
+    #[test]
+    fn test_parse_ipv6_cidr_prefix_nan() {
+        // Arrange
+        let expected_cidr_string: String = format!("{EXPECTED_IPV6_STR}/not_a_number");
+
+        // Act
+        let actual_result: Result<Ipv6Cidr, Ipv6CidrError> = expected_cidr_string.parse();
+
+        // Assert
+        assert!(matches!(actual_result, Err(Ipv6CidrError::PrefixNan)));
     }
 
     #[test]

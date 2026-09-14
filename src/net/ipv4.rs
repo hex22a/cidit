@@ -1,18 +1,22 @@
-use std::{net::Ipv4Addr, str::FromStr};
+use std::{
+    net::{AddrParseError, Ipv4Addr},
+    str::FromStr,
+};
 use thiserror::Error;
 
 const MAX_IPV4_CIDR_PREFIX_LEN: u8 = 32;
 pub const POINT_TO_POINT_CIDR_PREFIX_LEN: u8 = 31;
 
-/// Error parsing IPv4 CIDR
 #[derive(Debug, Error, PartialEq)]
 pub enum Ipv4CidrError {
     #[error("Invalid CIDR format (expected x.x.x.x/x)")]
-    InvalidFormat,
-    #[error("Invalid CIDR")]
-    InvalidCidr,
+    Format,
+    #[error("Failed to parse address: {0}")]
+    IpParse(AddrParseError),
+    #[error("Prefix is not a number")]
+    PrefixNan,
     #[error("Invalid CIDR prefix: {0} (expected <= {max} )", max = MAX_IPV4_CIDR_PREFIX_LEN)]
-    InvalidPrefix(u8),
+    PrefixLen(u8),
 }
 
 /// Internal representation of IPv4 CIDR
@@ -25,7 +29,7 @@ pub struct Ipv4Cidr {
 impl Ipv4Cidr {
     pub fn new(address: u32, prefix: u8) -> Result<Self, Ipv4CidrError> {
         if prefix > MAX_IPV4_CIDR_PREFIX_LEN {
-            return Err(Ipv4CidrError::InvalidPrefix(prefix));
+            return Err(Ipv4CidrError::PrefixLen(prefix));
         }
         Ok(Self {
             ip: Ipv4Addr::from_bits(address),
@@ -68,9 +72,9 @@ impl FromStr for Ipv4Cidr {
     type Err = Ipv4CidrError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (ip_str, prefix) = s.split_once('/').ok_or(Ipv4CidrError::InvalidFormat)?;
-        let ip: Ipv4Addr = ip_str.parse().map_err(|_| Ipv4CidrError::InvalidCidr)?;
-        let prefix: u8 = prefix.parse().map_err(|_| Ipv4CidrError::InvalidCidr)?;
+        let (ip_str, prefix) = s.split_once('/').ok_or(Ipv4CidrError::Format)?;
+        let ip: Ipv4Addr = ip_str.parse().map_err(Ipv4CidrError::IpParse)?;
+        let prefix: u8 = prefix.parse().map_err(|_| Ipv4CidrError::PrefixNan)?;
         Self::new(ip.to_bits(), prefix)
     }
 }
@@ -171,10 +175,7 @@ mod test {
         let actual_result = Ipv4Cidr::new(EXPECTED_BINARY_ADDRESS, expected_prefix);
 
         // Assert
-        assert!(matches!(
-            actual_result,
-            Err(Ipv4CidrError::InvalidPrefix(_))
-        ));
+        assert!(matches!(actual_result, Err(Ipv4CidrError::PrefixLen(_))));
     }
 
     #[test]
@@ -202,11 +203,11 @@ mod test {
         let actual_result: Result<Ipv4Cidr, Ipv4CidrError> = EXPECTED_IPV4_STR.parse();
 
         // Assert
-        assert_eq!(actual_result, Err(Ipv4CidrError::InvalidFormat));
+        assert_eq!(actual_result, Err(Ipv4CidrError::Format));
     }
 
     #[test]
-    fn test_parse_ipv4_cidr_invalid_cidr_invalid_ip() {
+    fn test_parse_ipv4_cidr_invalid_ip() {
         // Arrange
         let expected_prefix: u8 = 24;
         let expected_invalid_ip = "192.168.not_a_number.1";
@@ -216,7 +217,19 @@ mod test {
         let actual_result: Result<Ipv4Cidr, Ipv4CidrError> = expected_cidr_string.parse();
 
         // Assert
-        assert_eq!(actual_result, Err(Ipv4CidrError::InvalidCidr));
+        assert!(matches!(actual_result, Err(Ipv4CidrError::IpParse(_))));
+    }
+
+    #[test]
+    fn test_parse_ipv4_cidr_prefix_nan() {
+        // Arrange
+        let expected_cidr_string: String = format!("{EXPECTED_IPV4_STR}/not_a_number");
+
+        // Act
+        let actual_result: Result<Ipv4Cidr, Ipv4CidrError> = expected_cidr_string.parse();
+
+        // Assert
+        assert!(matches!(actual_result, Err(Ipv4CidrError::PrefixNan)));
     }
 
     #[test]

@@ -14,7 +14,7 @@ pub mod ipv6;
 
 #[derive(Debug, Error)]
 pub enum CidrParseError {
-    #[error("Not a valid CIDR (v4 or v6)")]
+    #[error("Invalid CIDR.\n IPv4: {v4}\n IPv6: {v6} ")]
     Neither {
         v4: Ipv4CidrError,
         v6: Ipv6CidrError,

@@ -9,6 +9,7 @@ mod range;
 pub mod test_helpers;
 
 pub use net::Cidr;
+pub use net::CidrParseError;
 pub use net::ipv4::Ipv4Cidr;
 pub use net::ipv4::Ipv4CidrError;
 pub use net::ipv4::Ipv4Network;

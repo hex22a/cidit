@@ -46,7 +46,7 @@ fn main() {
     match args.range {
         Some(range) => {
             let range: IpRange = range.parse::<IpRange>().unwrap_or_else(|e| {
-                eprintln!("{e}");
+                eprintln!("'{range}': {e}");
                 std::process::exit(1);
             });
 
@@ -86,7 +86,7 @@ fn main() {
                 .map(|cidr| match cidr.parse::<Cidr>() {
                     Ok(cidr) => cidr,
                     Err(err) => {
-                        eprintln!("Invalid CIDR '{}': {:?}", cidr, err);
+                        eprintln!("'{}': {}", cidr, err);
                         std::process::exit(1);
                     }
                 })
