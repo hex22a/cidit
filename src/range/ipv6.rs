@@ -1,40 +1,53 @@
 use std::net::Ipv6Addr;
 
-use ipnet::{Ipv6AddrRange, Ipv6Net};
+use crate::{
+    Cidr,
+    net::ipv6::{Ipv6Cidr, Ipv6Network},
+    range::AddressRange,
+};
 
-use crate::{Cidr, range::AddressRange};
+pub struct Ipv6Range {
+    start: Ipv6Addr,
+    end: Ipv6Addr,
+}
 
-impl AddressRange for Ipv6AddrRange {
+impl Ipv6Range {
+    pub fn new(start: Ipv6Addr, end: Ipv6Addr) -> Self {
+        Self { start, end }
+    }
+
+    pub fn start(&self) -> Ipv6Addr {
+        self.start
+    }
+
+    pub fn end(&self) -> Ipv6Addr {
+        self.end
+    }
+}
+
+impl AddressRange for Ipv6Range {
     fn smallest_common_cidr(&self) -> Cidr {
-        let start_addr = self
-            .clone()
-            .next()
-            .expect("first ip always exists")
-            .to_bits();
-        let end_addr = self.last().expect("last ip always exists").to_bits();
-        let diff = start_addr ^ end_addr;
+        let diff = self.start.to_bits() ^ self.end.to_bits();
         let prefix: u8 = diff.leading_zeros() as u8;
-        let ip = Ipv6Addr::from_bits(start_addr & !diff);
-        Cidr::V6(Ipv6Net::new(ip, prefix).expect("prefix is always less or equal to 128"))
+        Cidr::V6(
+            Ipv6Cidr::new(self.start.to_bits() & !diff, prefix)
+                .expect("prefix is always less or equal to 128"),
+        )
     }
 
     fn exact_fit(&self) -> Vec<Cidr> {
         let mut result: Vec<Cidr> = Vec::new();
-        let mut start_addr = self
-            .clone()
-            .next()
-            .expect("first ip always exist")
-            .to_bits();
-        let end_addr = self.last().expect("last ip always exists").to_bits();
+        let mut start_addr = self.start.to_bits();
+        let end_addr = self.end.to_bits();
 
         while start_addr <= end_addr {
             let mut prefix = 128u8;
-            let mut guess_cidr: Ipv6Net = Ipv6Net::new(Ipv6Addr::from_bits(start_addr), prefix)
-                .expect("prefix is always less or equal to 128");
+            let mut guess_cidr =
+                Ipv6Cidr::new(start_addr, prefix).expect("prefix is always less or equal to 128");
             let mut next_guess_cidr = guess_cidr;
 
-            while next_guess_cidr.network().to_bits() == start_addr
-                && next_guess_cidr.broadcast().to_bits() <= end_addr
+            while next_guess_cidr.network_address() == start_addr
+                && next_guess_cidr.last_address() <= end_addr
             {
                 guess_cidr = next_guess_cidr;
 
@@ -43,7 +56,7 @@ impl AddressRange for Ipv6AddrRange {
                 }
 
                 prefix -= 1;
-                next_guess_cidr = Ipv6Net::new(Ipv6Addr::from_bits(start_addr), prefix)
+                next_guess_cidr = Ipv6Cidr::new(start_addr, prefix)
                     .expect("prefix is always less or equal to 128");
             }
 
@@ -53,7 +66,7 @@ impl AddressRange for Ipv6AddrRange {
                 break;
             }
 
-            start_addr = guess_cidr.broadcast().to_bits() + 1;
+            start_addr = guess_cidr.last_address() + 1;
         }
 
         result
@@ -71,7 +84,7 @@ mod tests {
         let expected_end = String::from("2001:db8::20").parse().unwrap();
         let expected_ipv6_cidr = String::from("2001:db8::/122").parse().unwrap();
         let expected_common_cidr = Cidr::V6(expected_ipv6_cidr);
-        let range = Ipv6AddrRange::new(expected_start, expected_end);
+        let range = Ipv6Range::new(expected_start, expected_end);
 
         // Act
         let actual_common_cidr = range.smallest_common_cidr();
@@ -87,7 +100,7 @@ mod tests {
         let expected_end = String::from("2001:db8::10").parse().unwrap();
         let expected_ipv6_cidr = String::from("2001:db8::10/128").parse().unwrap();
         let expected_common_cidr = Cidr::V6(expected_ipv6_cidr);
-        let range = Ipv6AddrRange::new(expected_start, expected_end);
+        let range = Ipv6Range::new(expected_start, expected_end);
 
         // Act
         let actual_common_cidr = range.smallest_common_cidr();
@@ -104,7 +117,7 @@ mod tests {
         let expected_ipv6_cidr1 = String::from("2001:db8::10/124").parse().unwrap();
         let expected_ipv6_cidr2 = String::from("2001:db8::20/128").parse().unwrap();
         let expected_cidrs = vec![Cidr::V6(expected_ipv6_cidr1), Cidr::V6(expected_ipv6_cidr2)];
-        let range = Ipv6AddrRange::new(expected_start, expected_end);
+        let range = Ipv6Range::new(expected_start, expected_end);
 
         // Act
         let actual_cidrs = range.exact_fit();
@@ -128,7 +141,7 @@ mod tests {
             Cidr::V6(expected_ipv6_cidr3),
             Cidr::V6(expected_ipv6_cidr4),
         ];
-        let range = Ipv6AddrRange::new(expected_start, expected_end);
+        let range = Ipv6Range::new(expected_start, expected_end);
 
         // Act
         let actual_cidrs = range.exact_fit();
@@ -144,7 +157,7 @@ mod tests {
         let expected_end = String::from("2001:db8::10").parse().unwrap();
         let expected_ipv6_cidr1 = String::from("2001:db8::10/128").parse().unwrap();
         let expected_cidrs = vec![Cidr::V6(expected_ipv6_cidr1)];
-        let range = Ipv6AddrRange::new(expected_start, expected_end);
+        let range = Ipv6Range::new(expected_start, expected_end);
 
         // Act
         let actual_cidrs = range.exact_fit();
@@ -160,7 +173,7 @@ mod tests {
         let expected_end = String::from("2001:db8::ff").parse().unwrap();
         let expected_ipv6_cidr1 = String::from("2001:db8::/120").parse().unwrap();
         let expected_cidrs = vec![Cidr::V6(expected_ipv6_cidr1)];
-        let range = Ipv6AddrRange::new(expected_start, expected_end);
+        let range = Ipv6Range::new(expected_start, expected_end);
 
         // Act
         let actual_cidrs = range.exact_fit();
@@ -178,7 +191,7 @@ mod tests {
             .unwrap();
         let expected_ipv6_cidr1 = String::from("::/0").parse().unwrap();
         let expected_cidrs = vec![Cidr::V6(expected_ipv6_cidr1)];
-        let range = Ipv6AddrRange::new(expected_start, expected_end);
+        let range = Ipv6Range::new(expected_start, expected_end);
 
         // Act
         let actual_cidrs = range.exact_fit();
@@ -194,7 +207,7 @@ mod tests {
         let expected_end = String::from("2001:db8::1f").parse().unwrap();
         let expected_ipv6_cidr1 = String::from("2001:db8::10/124").parse().unwrap();
         let expected_cidrs = vec![Cidr::V6(expected_ipv6_cidr1)];
-        let range = Ipv6AddrRange::new(expected_start, expected_end);
+        let range = Ipv6Range::new(expected_start, expected_end);
 
         // Act
         let actual_cidrs = range.exact_fit();
@@ -210,7 +223,7 @@ mod tests {
         let expected_end = String::from("2001:db8::b").parse().unwrap();
         let expected_ipv6_cidr1 = String::from("2001:db8::8/126").parse().unwrap();
         let expected_cidrs = vec![Cidr::V6(expected_ipv6_cidr1)];
-        let range = Ipv6AddrRange::new(expected_start, expected_end);
+        let range = Ipv6Range::new(expected_start, expected_end);
 
         // Act
         let actual_cidrs = range.exact_fit();
@@ -227,7 +240,7 @@ mod tests {
         let expected_ipv6_cidr1 = String::from("2001:db8::fffe/127").parse().unwrap();
         let expected_ipv6_cidr2 = String::from("2001:db8::1:0/127").parse().unwrap();
         let expected_cidrs = vec![Cidr::V6(expected_ipv6_cidr1), Cidr::V6(expected_ipv6_cidr2)];
-        let range = Ipv6AddrRange::new(expected_start, expected_end);
+        let range = Ipv6Range::new(expected_start, expected_end);
 
         // Act
         let actual_cidrs = range.exact_fit();

@@ -1,6 +1,6 @@
-use std::net::Ipv4Addr;
+use std::net::{Ipv4Addr, Ipv6Addr};
 
-use cidit::{Cidr, Ipv4Network, POINT_TO_POINT_CIDR_PREFIX_LEN, SubnetSize};
+use cidit::{Cidr, Ipv4Network, Ipv6Network, POINT_TO_POINT_CIDR_PREFIX_LEN, SubnetSize};
 use serde::Serialize;
 use tabled::{
     Table, Tabled,
@@ -110,7 +110,7 @@ impl From<Cidr> for CidrTabledInfo {
                 prefix: v6.prefix_len(),
                 netmask: v6.netmask().to_string(),
                 hostmask: v6.hostmask().to_string(),
-                network: v6.network().to_string(),
+                network: Ipv6Addr::from_bits(v6.network_address()).to_string(),
                 available: v6.subnet_size(),
                 ..Default::default()
             },
@@ -148,7 +148,7 @@ impl From<Cidr> for CidrJsonInfo {
                 prefix_length: v6.prefix_len(),
                 netmask: v6.netmask().to_string(),
                 hostmask: v6.hostmask().to_string(),
-                network: v6.network().to_string(),
+                network: Ipv6Addr::from_bits(v6.network_address()).to_string(),
                 subnet_size: v6.subnet_size(),
             }),
         }
@@ -167,8 +167,8 @@ impl From<Cidr> for RangeTabledInfo {
             Cidr::V6(v6) => Self {
                 ip_ver: "v6",
                 cidr: format!("{}/{}", v6.addr(), v6.prefix_len()),
-                start: v6.network().to_string(),
-                end: v6.broadcast().to_string(),
+                start: Ipv6Addr::from_bits(v6.network_address()).to_string(),
+                end: Ipv6Addr::from_bits(v6.last_address()).to_string(),
             },
         }
     }
@@ -186,8 +186,8 @@ impl From<Cidr> for RangeJsonInfo {
             Cidr::V6(v6) => Self {
                 ip_version: "v6",
                 cidr: format!("{}/{}", v6.addr(), v6.prefix_len()),
-                start: v6.network().to_string(),
-                end: v6.broadcast().to_string(),
+                start: Ipv6Addr::from_bits(v6.network_address()).to_string(),
+                end: Ipv6Addr::from_bits(v6.last_address()).to_string(),
             },
         }
     }
@@ -234,8 +234,9 @@ where
 
 #[cfg(test)]
 mod tests {
-    use cidit::Ipv4Cidr;
-    use ipnet::Ipv6Net;
+    use std::net::Ipv6Addr;
+
+    use cidit::{Ipv4Cidr, Ipv6Cidr};
 
     use super::*;
 
@@ -348,8 +349,11 @@ mod tests {
         let expected_netmask: String = "ffff:ffff:ffff:ffff::".to_string();
         let expected_hostmask: String = "::ffff:ffff:ffff:ffff".to_string();
         let expected_network: String = "2001:db8:1::".to_string();
-        let expected_ipv6_cidr: Ipv6Net =
-            Ipv6Net::new(EXPECTED_IPV6_STR.parse().unwrap(), expected_prefix_len).unwrap();
+        let expected_ipv6_cidr = Ipv6Cidr::new(
+            EXPECTED_IPV6_STR.parse::<Ipv6Addr>().unwrap().to_bits(),
+            expected_prefix_len,
+        )
+        .unwrap();
         let expected_cidr_info = CidrTabledInfo {
             ip_ver: "v6",
             cidr: expected_cidr_str,
@@ -406,8 +410,11 @@ mod tests {
             end: String::from("2001:db8:1:0:ffff:ffff:ffff:ffff"),
         };
 
-        let expected_cidr: Ipv6Net =
-            Ipv6Net::new(EXPECTED_IPV6_STR.parse().unwrap(), expected_prefix_len).unwrap();
+        let expected_cidr = Ipv6Cidr::new(
+            EXPECTED_IPV6_STR.parse::<Ipv6Addr>().unwrap().to_bits(),
+            expected_prefix_len,
+        )
+        .unwrap();
 
         // Act
         let actual_cidr_info = RangeTabledInfo::from(Cidr::V6(expected_cidr));
@@ -451,8 +458,11 @@ mod tests {
             end: String::from("2001:db8:1:0:ffff:ffff:ffff:ffff"),
         };
 
-        let expected_cidr: Ipv6Net =
-            Ipv6Net::new(EXPECTED_IPV6_STR.parse().unwrap(), expected_prefix_len).unwrap();
+        let expected_cidr = Ipv6Cidr::new(
+            EXPECTED_IPV6_STR.parse::<Ipv6Addr>().unwrap().to_bits(),
+            expected_prefix_len,
+        )
+        .unwrap();
 
         // Act
         let actual_cidr_info = RangeJsonInfo::from(Cidr::V6(expected_cidr));

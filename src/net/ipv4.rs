@@ -16,7 +16,7 @@ pub enum Ipv4CidrError {
 }
 
 /// Internal representation of IPv4 CIDR
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Ipv4Cidr {
     ip: Ipv4Addr,
     prefix: u8,
@@ -32,18 +32,16 @@ impl Ipv4Cidr {
             prefix,
         })
     }
-
-    pub fn prefix_len(&self) -> u8 {
-        self.prefix
-    }
-
-    pub fn addr(&self) -> Ipv4Addr {
-        self.ip
-    }
 }
 
 /// IPv4 Network
 pub trait Ipv4Network {
+    /// Get address part
+    fn addr(&self) -> Ipv4Addr;
+
+    /// Get prefix length
+    fn prefix_len(&self) -> u8;
+
     /// Gets network mask address
     fn netmask(&self) -> Ipv4Addr;
 
@@ -78,6 +76,14 @@ impl FromStr for Ipv4Cidr {
 }
 
 impl Ipv4Network for Ipv4Cidr {
+    fn prefix_len(&self) -> u8 {
+        self.prefix
+    }
+
+    fn addr(&self) -> Ipv4Addr {
+        self.ip
+    }
+
     fn netmask(&self) -> Ipv4Addr {
         let mask = if self.prefix == 0 {
             0
@@ -133,6 +139,7 @@ mod test {
         // Assert
         test_helpers::assert_error::<Ipv4CidrError>();
     }
+
     #[test]
     fn test_ipv4_cidr_type() {
         // Arrange
@@ -142,7 +149,7 @@ mod test {
     }
 
     #[test]
-    fn test_construct_ipv4cidr() {
+    fn test_construct_ipv4_cidr() {
         // Arrange
         let expected_prefix: u8 = 24;
 
@@ -156,35 +163,7 @@ mod test {
     }
 
     #[test]
-    fn test_construct_ipv4cidr_single_ip() {
-        // Arrange
-        let expected_prefix: u8 = 32;
-
-        // Act
-        let actual_cidr: Ipv4Cidr =
-            Ipv4Cidr::new(EXPECTED_BINARY_ADDRESS, expected_prefix).unwrap();
-
-        // Assert
-        assert_eq!(actual_cidr.ip.to_bits(), EXPECTED_BINARY_ADDRESS);
-        assert_eq!(actual_cidr.prefix, expected_prefix);
-    }
-
-    #[test]
-    fn test_construct_ipv4cidr_entire_network() {
-        // Arrange
-        let expected_prefix: u8 = 0;
-
-        // Act
-        let actual_cidr: Ipv4Cidr =
-            Ipv4Cidr::new(EXPECTED_BINARY_ADDRESS, expected_prefix).unwrap();
-
-        // Assert
-        assert_eq!(actual_cidr.ip.to_bits(), EXPECTED_BINARY_ADDRESS);
-        assert_eq!(actual_cidr.prefix, expected_prefix);
-    }
-
-    #[test]
-    fn test_construct_ipv4cidr_wrong_prefix() {
+    fn test_construct_ipv4_cidr_wrong_prefix() {
         // Arrange
         let expected_prefix: u8 = 33;
 

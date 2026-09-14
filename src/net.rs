@@ -1,9 +1,13 @@
-use ipnet::{AddrParseError, Ipv6Net};
 use ipv4::Ipv4Cidr;
 use ipv4::Ipv4CidrError;
 use std::fmt::Display;
 use std::str::FromStr;
 use thiserror::Error;
+
+use crate::Ipv4Network;
+use crate::Ipv6Network;
+use crate::net::ipv6::Ipv6Cidr;
+use crate::net::ipv6::Ipv6CidrError;
 
 pub mod ipv4;
 pub mod ipv6;
@@ -13,7 +17,7 @@ pub enum CidrParseError {
     #[error("Not a valid CIDR (v4 or v6)")]
     Neither {
         v4: Ipv4CidrError,
-        v6: AddrParseError,
+        v6: Ipv6CidrError,
     },
 }
 
@@ -21,7 +25,7 @@ pub enum CidrParseError {
 #[derive(Debug, PartialEq)]
 pub enum Cidr {
     V4(Ipv4Cidr),
-    V6(Ipv6Net),
+    V6(Ipv6Cidr),
 }
 
 impl FromStr for Cidr {
@@ -33,7 +37,7 @@ impl FromStr for Cidr {
             Err(e) => e,
         };
 
-        let v6_err = match s.parse::<Ipv6Net>() {
+        let v6_err = match s.parse::<Ipv6Cidr>() {
             Ok(v6) => return Ok(Cidr::V6(v6)),
             Err(e) => e,
         };
@@ -60,7 +64,7 @@ impl Display for Cidr {
 
 #[cfg(test)]
 mod tests {
-    use super::Cidr;
+    use super::*;
 
     const EXPECTED_IPV4_PREFIX: u8 = 24;
     const EXPECTED_IPV6_PREFIX: u8 = 24;

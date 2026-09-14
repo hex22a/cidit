@@ -3,10 +3,12 @@ use std::{
     str::FromStr,
 };
 
-use ipnet::Ipv6AddrRange;
 use thiserror::Error;
 
-use crate::{Cidr, range::ipv4::Ipv4Range};
+use crate::{
+    Cidr,
+    range::{ipv4::Ipv4Range, ipv6::Ipv6Range},
+};
 
 mod ipv4;
 mod ipv6;
@@ -28,7 +30,7 @@ pub trait AddressRange {
 
 pub enum IpRange {
     V4(Ipv4Range),
-    V6(Ipv6AddrRange),
+    V6(Ipv6Range),
 }
 
 impl FromStr for IpRange {
@@ -49,7 +51,7 @@ impl FromStr for IpRange {
                 Err(_) => match start.parse::<Ipv6Addr>() {
                     Ok(ipv6_start) => match end.parse::<Ipv6Addr>() {
                         Ok(ipv6_end) => {
-                            return Ok(IpRange::V6(Ipv6AddrRange::new(ipv6_start, ipv6_end)));
+                            return Ok(IpRange::V6(Ipv6Range::new(ipv6_start, ipv6_end)));
                         }
                         Err(ipv6_end_err) => match end.parse::<Ipv4Addr>() {
                             Ok(_) => return Err(RangeParseError::Inconsistent),
@@ -77,7 +79,7 @@ impl FromStr for IpRange {
                 Err(_) => match start.parse::<Ipv6Addr>() {
                     Ok(ipv6_start) => match end.parse::<Ipv6Addr>() {
                         Ok(ipv6_end) => {
-                            return Ok(IpRange::V6(Ipv6AddrRange::new(ipv6_start, ipv6_end)));
+                            return Ok(IpRange::V6(Ipv6Range::new(ipv6_start, ipv6_end)));
                         }
                         Err(ipv6_end_err) => match end.parse::<Ipv4Addr>() {
                             Ok(_) => return Err(RangeParseError::Inconsistent),
@@ -105,7 +107,7 @@ impl FromStr for IpRange {
                 Err(_) => match start.parse::<Ipv6Addr>() {
                     Ok(ipv6_start) => match end.parse::<Ipv6Addr>() {
                         Ok(ipv6_end) => {
-                            return Ok(IpRange::V6(Ipv6AddrRange::new(ipv6_start, ipv6_end)));
+                            return Ok(IpRange::V6(Ipv6Range::new(ipv6_start, ipv6_end)));
                         }
                         Err(ipv6_end_err) => match end.parse::<Ipv4Addr>() {
                             Ok(_) => return Err(RangeParseError::Inconsistent),
@@ -203,11 +205,8 @@ mod tests {
         // Assert
         match actual_range {
             IpRange::V6(range) => {
-                assert_eq!(
-                    range.clone().next().unwrap().to_string(),
-                    EXPECTED_IPV6_START_STR
-                );
-                assert_eq!(range.last().unwrap().to_string(), EXPECTED_IPV6_END_STR);
+                assert_eq!(range.start().to_string(), EXPECTED_IPV6_START_STR);
+                assert_eq!(range.end().to_string(), EXPECTED_IPV6_END_STR);
             }
             _ => panic!("Expected IpRange::V6"),
         }
@@ -225,11 +224,8 @@ mod tests {
         // Assert
         match actual_range {
             IpRange::V6(range) => {
-                assert_eq!(
-                    range.clone().next().unwrap().to_string(),
-                    EXPECTED_IPV6_START_STR
-                );
-                assert_eq!(range.last().unwrap().to_string(), EXPECTED_IPV6_END_STR);
+                assert_eq!(range.start().to_string(), EXPECTED_IPV6_START_STR);
+                assert_eq!(range.end().to_string(), EXPECTED_IPV6_END_STR);
             }
             _ => panic!("Expected IpRange::V6"),
         }
@@ -247,11 +243,8 @@ mod tests {
         // Assert
         match actual_range {
             IpRange::V6(range) => {
-                assert_eq!(
-                    range.clone().next().unwrap().to_string(),
-                    EXPECTED_IPV6_START_STR
-                );
-                assert_eq!(range.last().unwrap().to_string(), EXPECTED_IPV6_END_STR);
+                assert_eq!(range.start().to_string(), EXPECTED_IPV6_START_STR);
+                assert_eq!(range.end().to_string(), EXPECTED_IPV6_END_STR);
             }
             _ => panic!("Expected IpRange::V6"),
         }
