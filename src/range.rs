@@ -1,5 +1,5 @@
 use std::{
-    net::{AddrParseError, IpAddr, Ipv4Addr, Ipv6Addr},
+    net::{AddrParseError, IpAddr},
     str::FromStr,
 };
 
