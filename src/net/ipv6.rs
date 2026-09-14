@@ -81,10 +81,10 @@ pub trait Ipv6Network {
     fn hostmask(&self) -> Ipv6Addr;
 
     /// Gets arithmetical network address
-    fn network_address(&self) -> u128;
+    fn network_address(&self) -> Ipv6Addr;
 
     /// Gets last available address
-    fn last_address(&self) -> u128;
+    fn last_address(&self) -> Ipv6Addr;
 }
 
 impl Ipv6Network for Ipv6Cidr {
@@ -105,12 +105,12 @@ impl Ipv6Network for Ipv6Cidr {
         Ipv6Addr::from_bits(mask)
     }
 
-    fn network_address(&self) -> u128 {
-        self.ip.to_bits() & self.netmask().to_bits()
+    fn network_address(&self) -> Ipv6Addr {
+        Ipv6Addr::from_bits(self.ip.to_bits() & self.netmask().to_bits())
     }
 
-    fn last_address(&self) -> u128 {
-        self.network_address() + self.hostmask().to_bits()
+    fn last_address(&self) -> Ipv6Addr {
+        Ipv6Addr::from_bits(self.network_address().to_bits() + self.hostmask().to_bits())
     }
 
     fn hostmask(&self) -> Ipv6Addr {
@@ -367,7 +367,7 @@ mod test {
     fn test_network_address() {
         // Arrange
         let expected_prefix_len: u8 = 64;
-        let expected_network_address = Ipv6Addr::from_str("2001:db8:1::").unwrap().to_bits();
+        let expected_network_address = Ipv6Addr::from_str("2001:db8:1::").unwrap();
         let expected_ipv6_cidr = Ipv6Cidr::new(
             EXPECTED_IPV6_STR.parse::<Ipv6Addr>().unwrap().to_bits(),
             expected_prefix_len,
@@ -385,9 +385,7 @@ mod test {
     fn test_last_address() {
         // Arrange
         let expected_prefix_len: u8 = 64;
-        let expected_last_address = Ipv6Addr::from_str("2001:db8:1::ffff:ffff:ffff:ffff")
-            .unwrap()
-            .to_bits();
+        let expected_last_address = Ipv6Addr::from_str("2001:db8:1::ffff:ffff:ffff:ffff").unwrap();
         let expected_ipv6_cidr = Ipv6Cidr::new(
             EXPECTED_IPV6_STR.parse::<Ipv6Addr>().unwrap().to_bits(),
             expected_prefix_len,

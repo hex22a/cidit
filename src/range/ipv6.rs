@@ -46,8 +46,8 @@ impl AddressRange for Ipv6Range {
                 Ipv6Cidr::new(start_addr, prefix).expect("prefix is always less or equal to 128");
             let mut next_guess_cidr = guess_cidr;
 
-            while next_guess_cidr.network_address() == start_addr
-                && next_guess_cidr.last_address() <= end_addr
+            while next_guess_cidr.network_address().to_bits() == start_addr
+                && next_guess_cidr.last_address().to_bits() <= end_addr
             {
                 guess_cidr = next_guess_cidr;
 
@@ -66,7 +66,7 @@ impl AddressRange for Ipv6Range {
                 break;
             }
 
-            start_addr = guess_cidr.last_address() + 1;
+            start_addr = guess_cidr.last_address().to_bits() + 1;
         }
 
         result
