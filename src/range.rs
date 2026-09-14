@@ -33,94 +33,48 @@ pub enum IpRange {
     V6(Ipv6Range),
 }
 
+impl IpRange {
+    fn parse_ranges(start: &str, end: &str) -> Result<Self, RangeParseError> {
+        match start.parse::<Ipv4Addr>() {
+            Ok(ipv4_start) => match end.parse::<Ipv4Addr>() {
+                Ok(ipv4_end) => return Ok(IpRange::V4(Ipv4Range::new(ipv4_start, ipv4_end))),
+                Err(ipv4_end_err) => match end.parse::<Ipv6Addr>() {
+                    Ok(_) => return Err(RangeParseError::Inconsistent),
+                    Err(_) => {
+                        return Err(RangeParseError::IpError(ipv4_end_err));
+                    }
+                },
+            },
+            Err(_) => match start.parse::<Ipv6Addr>() {
+                Ok(ipv6_start) => match end.parse::<Ipv6Addr>() {
+                    Ok(ipv6_end) => {
+                        return Ok(IpRange::V6(Ipv6Range::new(ipv6_start, ipv6_end)));
+                    }
+                    Err(ipv6_end_err) => match end.parse::<Ipv4Addr>() {
+                        Ok(_) => return Err(RangeParseError::Inconsistent),
+                        Err(_) => {
+                            return Err(RangeParseError::IpError(ipv6_end_err));
+                        }
+                    },
+                },
+                Err(ipv6_start_err) => {
+                    return Err(RangeParseError::IpError(ipv6_start_err));
+                }
+            },
+        }
+    }
+}
+
 impl FromStr for IpRange {
     type Err = RangeParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if let Some((start, end)) = s.split_once("..") {
-            match start.parse::<Ipv4Addr>() {
-                Ok(ipv4_start) => match end.parse::<Ipv4Addr>() {
-                    Ok(ipv4_end) => return Ok(IpRange::V4(Ipv4Range::new(ipv4_start, ipv4_end))),
-                    Err(ipv4_end_err) => match end.parse::<Ipv6Addr>() {
-                        Ok(_) => return Err(RangeParseError::Inconsistent),
-                        Err(_) => {
-                            return Err(RangeParseError::IpError(ipv4_end_err));
-                        }
-                    },
-                },
-                Err(_) => match start.parse::<Ipv6Addr>() {
-                    Ok(ipv6_start) => match end.parse::<Ipv6Addr>() {
-                        Ok(ipv6_end) => {
-                            return Ok(IpRange::V6(Ipv6Range::new(ipv6_start, ipv6_end)));
-                        }
-                        Err(ipv6_end_err) => match end.parse::<Ipv4Addr>() {
-                            Ok(_) => return Err(RangeParseError::Inconsistent),
-                            Err(_) => {
-                                return Err(RangeParseError::IpError(ipv6_end_err));
-                            }
-                        },
-                    },
-                    Err(ipv6_start_err) => {
-                        return Err(RangeParseError::IpError(ipv6_start_err));
-                    }
-                },
-            };
+            Self::parse_ranges(start, end)
         } else if let Some((start, end)) = s.split_once("-") {
-            match start.parse::<Ipv4Addr>() {
-                Ok(ipv4_start) => match end.parse::<Ipv4Addr>() {
-                    Ok(ipv4_end) => return Ok(IpRange::V4(Ipv4Range::new(ipv4_start, ipv4_end))),
-                    Err(ipv4_end_err) => match end.parse::<Ipv6Addr>() {
-                        Ok(_) => return Err(RangeParseError::Inconsistent),
-                        Err(_) => {
-                            return Err(RangeParseError::IpError(ipv4_end_err));
-                        }
-                    },
-                },
-                Err(_) => match start.parse::<Ipv6Addr>() {
-                    Ok(ipv6_start) => match end.parse::<Ipv6Addr>() {
-                        Ok(ipv6_end) => {
-                            return Ok(IpRange::V6(Ipv6Range::new(ipv6_start, ipv6_end)));
-                        }
-                        Err(ipv6_end_err) => match end.parse::<Ipv4Addr>() {
-                            Ok(_) => return Err(RangeParseError::Inconsistent),
-                            Err(_) => {
-                                return Err(RangeParseError::IpError(ipv6_end_err));
-                            }
-                        },
-                    },
-                    Err(ipv6_start_err) => {
-                        return Err(RangeParseError::IpError(ipv6_start_err));
-                    }
-                },
-            };
+            Self::parse_ranges(start, end)
         } else if let Some((start, end)) = s.split_once(" ") {
-            match start.parse::<Ipv4Addr>() {
-                Ok(ipv4_start) => match end.parse::<Ipv4Addr>() {
-                    Ok(ipv4_end) => return Ok(IpRange::V4(Ipv4Range::new(ipv4_start, ipv4_end))),
-                    Err(ipv4_end_err) => match end.parse::<Ipv6Addr>() {
-                        Ok(_) => return Err(RangeParseError::Inconsistent),
-                        Err(_) => {
-                            return Err(RangeParseError::IpError(ipv4_end_err));
-                        }
-                    },
-                },
-                Err(_) => match start.parse::<Ipv6Addr>() {
-                    Ok(ipv6_start) => match end.parse::<Ipv6Addr>() {
-                        Ok(ipv6_end) => {
-                            return Ok(IpRange::V6(Ipv6Range::new(ipv6_start, ipv6_end)));
-                        }
-                        Err(ipv6_end_err) => match end.parse::<Ipv4Addr>() {
-                            Ok(_) => return Err(RangeParseError::Inconsistent),
-                            Err(_) => {
-                                return Err(RangeParseError::IpError(ipv6_end_err));
-                            }
-                        },
-                    },
-                    Err(ipv6_start_err) => {
-                        return Err(RangeParseError::IpError(ipv6_start_err));
-                    }
-                },
-            };
+            Self::parse_ranges(start, end)
         } else {
             Err(RangeParseError::Format)
         }
