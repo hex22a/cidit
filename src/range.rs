@@ -1,5 +1,5 @@
 use std::{
-    net::{AddrParseError, Ipv4Addr, Ipv6Addr},
+    net::{AddrParseError, IpAddr, Ipv4Addr, Ipv6Addr},
     str::FromStr,
 };
 
@@ -35,32 +35,16 @@ pub enum IpRange {
 
 impl IpRange {
     fn parse_ranges(start: &str, end: &str) -> Result<Self, RangeError> {
-        match start.parse::<Ipv4Addr>() {
-            Ok(ipv4_start) => match end.parse::<Ipv4Addr>() {
-                Ok(ipv4_end) => return Ok(IpRange::V4(Ipv4Range::new(ipv4_start, ipv4_end))),
-                Err(ipv4_end_err) => match end.parse::<Ipv6Addr>() {
-                    Ok(_) => return Err(RangeError::Inconsistent),
-                    Err(_) => {
-                        return Err(RangeError::IpParse(ipv4_end_err));
-                    }
-                },
-            },
-            Err(_) => match start.parse::<Ipv6Addr>() {
-                Ok(ipv6_start) => match end.parse::<Ipv6Addr>() {
-                    Ok(ipv6_end) => {
-                        return Ok(IpRange::V6(Ipv6Range::new(ipv6_start, ipv6_end)));
-                    }
-                    Err(ipv6_end_err) => match end.parse::<Ipv4Addr>() {
-                        Ok(_) => return Err(RangeError::Inconsistent),
-                        Err(_) => {
-                            return Err(RangeError::IpParse(ipv6_end_err));
-                        }
-                    },
-                },
-                Err(ipv6_start_err) => {
-                    return Err(RangeError::IpParse(ipv6_start_err));
-                }
-            },
+        let start = start.parse::<IpAddr>().map_err(RangeError::IpParse)?;
+        let end = end.parse::<IpAddr>().map_err(RangeError::IpParse)?;
+        match (start, end) {
+            (IpAddr::V4(ipv4_start), IpAddr::V4(ipv4_end)) => {
+                Ok(IpRange::V4(Ipv4Range::new(ipv4_start, ipv4_end)))
+            }
+            (IpAddr::V6(ipv6_start), IpAddr::V6(ipv6_end)) => {
+                Ok(IpRange::V6(Ipv6Range::new(ipv6_start, ipv6_end)))
+            }
+            _ => Err(RangeError::Inconsistent),
         }
     }
 }

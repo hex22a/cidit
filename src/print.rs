@@ -1,5 +1,3 @@
-use std::net::{Ipv4Addr, Ipv6Addr};
-
 use cidit::{Cidr, Ipv4Network, Ipv6Network, POINT_TO_POINT_CIDR_PREFIX_LEN, SubnetSize};
 use serde::Serialize;
 use tabled::{
