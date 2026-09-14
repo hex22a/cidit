@@ -71,9 +71,9 @@ impl FromStr for IpRange {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if let Some((start, end)) = s.split_once("..") {
             Self::parse_ranges(start, end)
-        } else if let Some((start, end)) = s.split_once("-") {
+        } else if let Some((start, end)) = s.split_once('-') {
             Self::parse_ranges(start, end)
-        } else if let Some((start, end)) = s.split_once(" ") {
+        } else if let Some((start, end)) = s.split_once(' ') {
             Self::parse_ranges(start, end)
         } else {
             Err(RangeParseError::Format)
