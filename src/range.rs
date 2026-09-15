@@ -1,4 +1,6 @@
 use std::{
+    fmt::Debug,
+    fmt::Display,
     net::{AddrParseError, IpAddr},
     ops::{BitAnd, BitXor, Not},
     str::FromStr,
@@ -27,10 +29,13 @@ pub enum RangeError {
 }
 
 pub trait AddressRange {
-    fn start(&self) -> IpAddr;
-    fn end(&self) -> IpAddr;
-    fn smallest_common_cidr(&self) -> Cidr;
-    fn exact_fit(&self) -> Vec<Cidr>;
+    type Addr: Debug + Display + PartialEq + PartialOrd;
+    type Net;
+
+    fn start(&self) -> Self::Addr;
+    fn end(&self) -> Self::Addr;
+    fn smallest_common_cidr(&self) -> Self::Net;
+    fn exact_fit(&self) -> Vec<Self::Net>;
 }
 
 pub enum IpRange {
@@ -70,21 +75,24 @@ impl FromStr for IpRange {
     }
 }
 
-fn smallest_common_cidr<T, F>(start: T, end: T, make_cidr: F) -> Cidr
+fn smallest_common_cidr<T, N, F>(start: T, end: T, make_cidr: F) -> N
 where
     T: IpBits + BitXor<Output = T> + BitAnd<Output = T> + Not<Output = T> + Copy,
-    F: FnOnce(T, u8) -> Cidr,
+    N: IpNetwork,
+    F: FnOnce(T, u8) -> N,
 {
     let diff = start ^ end;
     let prefix = diff.leading_zeros();
     make_cidr(start & !diff, prefix)
 }
 
-fn exact_fit<F>(start: IpAddr, end: IpAddr, max_prefix: u8, make_cidr: F) -> Vec<Cidr>
+fn exact_fit<T, F>(start: T::Addr, end: T::Addr, max_prefix: u8, make_cidr: F) -> Vec<T>
 where
-    F: Fn(IpAddr, u8) -> Cidr,
+    T: IpNetwork + Copy,
+    T::Addr: Incrementable,
+    F: Fn(T::Addr, u8) -> T,
 {
-    let mut result: Vec<Cidr> = Vec::new();
+    let mut result: Vec<T> = Vec::new();
     let mut start_addr = start;
     let end_addr = end;
 
@@ -122,31 +130,34 @@ where
 }
 
 impl AddressRange for IpRange {
+    type Addr = IpAddr;
+    type Net = Cidr;
+
     fn start(&self) -> IpAddr {
         match self {
-            IpRange::V4(v4) => v4.start(),
-            IpRange::V6(v6) => v6.start(),
+            IpRange::V4(v4) => IpAddr::V4(v4.start()),
+            IpRange::V6(v6) => IpAddr::V6(v6.start()),
         }
     }
 
     fn end(&self) -> IpAddr {
         match self {
-            IpRange::V4(v4) => v4.end(),
-            IpRange::V6(v6) => v6.end(),
+            IpRange::V4(v4) => IpAddr::V4(v4.end()),
+            IpRange::V6(v6) => IpAddr::V6(v6.end()),
         }
     }
 
     fn smallest_common_cidr(&self) -> Cidr {
         match self {
-            IpRange::V4(ipv4_range) => ipv4_range.smallest_common_cidr(),
-            IpRange::V6(ipv6_range) => ipv6_range.smallest_common_cidr(),
+            IpRange::V4(ipv4_range) => Cidr::V4(ipv4_range.smallest_common_cidr()),
+            IpRange::V6(ipv6_range) => Cidr::V6(ipv6_range.smallest_common_cidr()),
         }
     }
 
     fn exact_fit(&self) -> Vec<Cidr> {
         match self {
-            IpRange::V4(ipv4_range) => ipv4_range.exact_fit(),
-            IpRange::V6(ipv6_range) => ipv6_range.exact_fit(),
+            IpRange::V4(ipv4_range) => ipv4_range.exact_fit().into_iter().map(Cidr::V4).collect(),
+            IpRange::V6(ipv6_range) => ipv6_range.exact_fit().into_iter().map(Cidr::V6).collect(),
         }
     }
 }

@@ -50,21 +50,10 @@ fn main() {
                 std::process::exit(1);
             });
 
-            let cidrs: Vec<Cidr> = match range {
-                IpRange::V4(ipv4_range) => {
-                    if args.exact {
-                        ipv4_range.exact_fit()
-                    } else {
-                        vec![ipv4_range.smallest_common_cidr()]
-                    }
-                }
-                IpRange::V6(ipv6_range) => {
-                    if args.exact {
-                        ipv6_range.exact_fit()
-                    } else {
-                        vec![ipv6_range.smallest_common_cidr()]
-                    }
-                }
+            let cidrs: Vec<Cidr> = if args.exact {
+                range.exact_fit()
+            } else {
+                vec![range.smallest_common_cidr()]
             };
 
             match args.format {

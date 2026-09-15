@@ -1,4 +1,4 @@
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+use std::net::{Ipv4Addr, Ipv6Addr};
 
 pub trait IpBits {
     fn leading_zeros(self) -> u8;
@@ -20,19 +20,14 @@ pub trait Incrementable: Sized {
     fn checked_add_one(self) -> Option<Self>;
 }
 
-impl Incrementable for IpAddr {
+impl Incrementable for Ipv4Addr {
     fn checked_add_one(self) -> Option<Self> {
-        match self {
-            IpAddr::V4(ipv4_addr) => ipv4_addr
-                .to_bits()
-                .checked_add(1)
-                .map(Ipv4Addr::from_bits)
-                .map(IpAddr::V4),
-            IpAddr::V6(ipv6_addr) => ipv6_addr
-                .to_bits()
-                .checked_add(1)
-                .map(Ipv6Addr::from_bits)
-                .map(IpAddr::V6),
-        }
+        self.to_bits().checked_add(1).map(Ipv4Addr::from_bits)
+    }
+}
+
+impl Incrementable for Ipv6Addr {
+    fn checked_add_one(self) -> Option<Self> {
+        self.to_bits().checked_add(1).map(Ipv6Addr::from_bits)
     }
 }

@@ -1,6 +1,6 @@
-use std::net::{IpAddr, Ipv4Addr};
+use std::net::Ipv4Addr;
 
-use crate::{Cidr, Ipv4Cidr, range::AddressRange};
+use crate::{Ipv4Cidr, range::AddressRange};
 
 pub struct Ipv4Range {
     start: Ipv4Addr,
@@ -14,31 +14,29 @@ impl Ipv4Range {
 }
 
 impl AddressRange for Ipv4Range {
-    fn start(&self) -> IpAddr {
-        IpAddr::V4(self.start)
+    type Addr = Ipv4Addr;
+    type Net = Ipv4Cidr;
+
+    fn start(&self) -> Ipv4Addr {
+        self.start
     }
 
-    fn end(&self) -> IpAddr {
-        IpAddr::V4(self.end)
+    fn end(&self) -> Ipv4Addr {
+        self.end
     }
 
-    fn smallest_common_cidr(&self) -> Cidr {
+    fn smallest_common_cidr(&self) -> Ipv4Cidr {
         let start = self.start.to_bits();
         let end = self.end.to_bits();
         super::smallest_common_cidr(start, end, |addr, prefix| {
-            Cidr::V4(
-                Ipv4Cidr::new(Ipv4Addr::from_bits(addr), prefix)
-                    .expect("prefix is always less or equal to 32"),
-            )
+            Ipv4Cidr::new(Ipv4Addr::from_bits(addr), prefix)
+                .expect("prefix is always less or equal to 32")
         })
     }
 
-    fn exact_fit(&self) -> Vec<Cidr> {
-        super::exact_fit(self.start(), self.end(), 32u8, |addr, prefix| match addr {
-            IpAddr::V4(ipv4_addr) => Cidr::V4(
-                Ipv4Cidr::new(ipv4_addr, prefix).expect("prefix is always less or equal to 32"),
-            ),
-            IpAddr::V6(_) => unreachable!("IPv4 address cannot be IPv6"),
+    fn exact_fit(&self) -> Vec<Ipv4Cidr> {
+        super::exact_fit(self.start(), self.end(), 32u8, |addr, prefix| {
+            Ipv4Cidr::new(addr, prefix).expect("prefix is always less or equal to 32")
         })
     }
 }
@@ -52,8 +50,7 @@ mod tests {
         // Arrange
         let expected_start = String::from("10.0.0.10").parse().unwrap();
         let expected_end = String::from("10.0.0.20").parse().unwrap();
-        let expected_ipv4_cidr = String::from("10.0.0.0/27").parse().unwrap();
-        let expected_common_cidr = Cidr::V4(expected_ipv4_cidr);
+        let expected_common_cidr = String::from("10.0.0.0/27").parse().unwrap();
         let range = Ipv4Range::new(expected_start, expected_end);
 
         // Act
@@ -68,8 +65,7 @@ mod tests {
         // Arrange
         let expected_start = String::from("10.0.0.20").parse().unwrap();
         let expected_end = String::from("10.0.0.10").parse().unwrap();
-        let expected_ipv4_cidr = String::from("10.0.0.0/27").parse().unwrap();
-        let expected_common_cidr = Cidr::V4(expected_ipv4_cidr);
+        let expected_common_cidr = String::from("10.0.0.0/27").parse().unwrap();
         let range = Ipv4Range::new(expected_start, expected_end);
 
         // Act
@@ -84,8 +80,7 @@ mod tests {
         // Arrange
         let expected_start = String::from("10.0.0.10").parse().unwrap();
         let expected_end = String::from("10.0.0.10").parse().unwrap();
-        let expected_ipv4_cidr = String::from("10.0.0.10/32").parse().unwrap();
-        let expected_common_cidr = Cidr::V4(expected_ipv4_cidr);
+        let expected_common_cidr = String::from("10.0.0.10/32").parse().unwrap();
         let range = Ipv4Range::new(expected_start, expected_end);
 
         // Act
@@ -105,10 +100,10 @@ mod tests {
         let expected_ipv4_cidr3 = String::from("10.0.0.16/30").parse().unwrap();
         let expected_ipv4_cidr4 = String::from("10.0.0.20/32").parse().unwrap();
         let expected_cidrs = vec![
-            Cidr::V4(expected_ipv4_cidr1),
-            Cidr::V4(expected_ipv4_cidr2),
-            Cidr::V4(expected_ipv4_cidr3),
-            Cidr::V4(expected_ipv4_cidr4),
+            expected_ipv4_cidr1,
+            expected_ipv4_cidr2,
+            expected_ipv4_cidr3,
+            expected_ipv4_cidr4,
         ];
         let range = Ipv4Range::new(expected_start, expected_end);
 
@@ -129,10 +124,10 @@ mod tests {
         let expected_ipv4_cidr3 = String::from("10.0.0.8/31").parse().unwrap();
         let expected_ipv4_cidr4 = String::from("10.0.0.10/32").parse().unwrap();
         let expected_cidrs = vec![
-            Cidr::V4(expected_ipv4_cidr1),
-            Cidr::V4(expected_ipv4_cidr2),
-            Cidr::V4(expected_ipv4_cidr3),
-            Cidr::V4(expected_ipv4_cidr4),
+            expected_ipv4_cidr1,
+            expected_ipv4_cidr2,
+            expected_ipv4_cidr3,
+            expected_ipv4_cidr4,
         ];
         let range = Ipv4Range::new(expected_start, expected_end);
 
@@ -149,7 +144,7 @@ mod tests {
         let expected_start = String::from("10.0.0.10").parse().unwrap();
         let expected_end = String::from("10.0.0.10").parse().unwrap();
         let expected_ipv4_cidr1 = String::from("10.0.0.10/32").parse().unwrap();
-        let expected_cidrs = vec![Cidr::V4(expected_ipv4_cidr1)];
+        let expected_cidrs = vec![expected_ipv4_cidr1];
         let range = Ipv4Range::new(expected_start, expected_end);
 
         // Act
@@ -165,7 +160,7 @@ mod tests {
         let expected_start = String::from("10.0.0.0").parse().unwrap();
         let expected_end = String::from("10.0.0.255").parse().unwrap();
         let expected_ipv4_cidr1 = String::from("10.0.0.0/24").parse().unwrap();
-        let expected_cidrs = vec![Cidr::V4(expected_ipv4_cidr1)];
+        let expected_cidrs = vec![expected_ipv4_cidr1];
         let range = Ipv4Range::new(expected_start, expected_end);
 
         // Act
@@ -181,7 +176,7 @@ mod tests {
         let expected_start = String::from("0.0.0.0").parse().unwrap();
         let expected_end = String::from("255.255.255.255").parse().unwrap();
         let expected_ipv4_cidr1 = String::from("0.0.0.0/0").parse().unwrap();
-        let expected_cidrs = vec![Cidr::V4(expected_ipv4_cidr1)];
+        let expected_cidrs = vec![expected_ipv4_cidr1];
         let range = Ipv4Range::new(expected_start, expected_end);
 
         // Act
@@ -197,7 +192,7 @@ mod tests {
         let expected_start = String::from("10.0.0.16").parse().unwrap();
         let expected_end = String::from("10.0.0.31").parse().unwrap();
         let expected_ipv4_cidr1 = String::from("10.0.0.16/28").parse().unwrap();
-        let expected_cidrs = vec![Cidr::V4(expected_ipv4_cidr1)];
+        let expected_cidrs = vec![expected_ipv4_cidr1];
         let range = Ipv4Range::new(expected_start, expected_end);
 
         // Act
@@ -213,7 +208,7 @@ mod tests {
         let expected_start = String::from("10.0.0.8").parse().unwrap();
         let expected_end = String::from("10.0.0.11").parse().unwrap();
         let expected_ipv4_cidr1 = String::from("10.0.0.8/30").parse().unwrap();
-        let expected_cidrs = vec![Cidr::V4(expected_ipv4_cidr1)];
+        let expected_cidrs = vec![expected_ipv4_cidr1];
         let range = Ipv4Range::new(expected_start, expected_end);
 
         // Act
@@ -230,7 +225,7 @@ mod tests {
         let expected_end = String::from("10.0.1.1").parse().unwrap();
         let expected_ipv4_cidr1 = String::from("10.0.0.254/31").parse().unwrap();
         let expected_ipv4_cidr2 = String::from("10.0.1.0/31").parse().unwrap();
-        let expected_cidrs = vec![Cidr::V4(expected_ipv4_cidr1), Cidr::V4(expected_ipv4_cidr2)];
+        let expected_cidrs = vec![expected_ipv4_cidr1, expected_ipv4_cidr2];
         let range = Ipv4Range::new(expected_start, expected_end);
 
         // Act
