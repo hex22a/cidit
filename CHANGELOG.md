@@ -1,5 +1,39 @@
 # Changelog
 
+## [4.0.0](https://github.com/hex22a/cidit/compare/v3.3.0...v4.0.0) (2026-09-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* Introduced Addr and Net associated types for AddressRange trait
+* DRY range arithmenitcs. CIDR types constructors accept IP types instead of raw numbers
+* Return IP types in network traits instead of raw numbers
+* Formatted error output. Error types are re-exported
+* Dropped ipnet dependency. Optimized compile time
+* Added netmask method to calculate netmask ad-hoc. Optimized memory usage for ipv4 net
+* Replaced own IPv4 implementation with the standard library
+* Removed redundant Inspection result type
+* Changed IPv4 to tuple struct
+* Removed redundant Ipv4CidrParts type
+
+### Features
+
+* Added formatted print for ranges ([0cc7370](https://github.com/hex22a/cidit/commit/0cc73701b016d06892352224f1d1dec34936f71a))
+* Formatted error output. Error types are re-exported ([91ddc05](https://github.com/hex22a/cidit/commit/91ddc05a5ff85b37780663b15ef83ecf1645c728))
+
+
+### Bug Fixes
+
+* Added netmask method to calculate netmask ad-hoc. Optimized memory usage for ipv4 net ([76972dc](https://github.com/hex22a/cidit/commit/76972dc401816f9335767c8b38dc9251a1016f67))
+* Changed IPv4 to tuple struct ([3f40970](https://github.com/hex22a/cidit/commit/3f40970ff06005a0f63bc25705db4f76e5c39ca9))
+* Dropped ipnet dependency. Optimized compile time ([84ddb97](https://github.com/hex22a/cidit/commit/84ddb972d3241275c7678a5329cead03a43095e2))
+* DRY range arithmenitcs. CIDR types constructors accept IP types instead of raw numbers ([c23d438](https://github.com/hex22a/cidit/commit/c23d438fd6e875230ad3153ca8985d9b2c548d02))
+* Introduced Addr and Net associated types for AddressRange trait ([1558d5f](https://github.com/hex22a/cidit/commit/1558d5f9a5e67d0196530c709506e3ad7915c4d8))
+* Removed redundant Inspection result type ([3f3ca83](https://github.com/hex22a/cidit/commit/3f3ca83337d06fba41421a09833cb1a6e567ca76))
+* Removed redundant Ipv4CidrParts type ([63c1734](https://github.com/hex22a/cidit/commit/63c1734ba89d966370921690c18acb3af2d6a56b))
+* Replaced own IPv4 implementation with the standard library ([1fdd2cf](https://github.com/hex22a/cidit/commit/1fdd2cf41b99008373efb576773e602cc0cdf561))
+* Return IP types in network traits instead of raw numbers ([0e706bf](https://github.com/hex22a/cidit/commit/0e706bf6b6f7d17a3ab89a22ab15b24efe450e16))
+
 ## [3.3.0](https://github.com/hex22a/cidit/compare/v3.2.4...v3.3.0) (2026-09-12)
 
 
