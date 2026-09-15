@@ -1,10 +1,6 @@
-use std::net::Ipv6Addr;
+use std::net::{IpAddr, Ipv6Addr};
 
-use crate::{
-    Cidr,
-    net::ipv6::{Ipv6Cidr, Ipv6Network},
-    range::AddressRange,
-};
+use crate::{Cidr, net::ipv6::Ipv6Cidr, range::AddressRange};
 
 pub struct Ipv6Range {
     start: Ipv6Addr,
@@ -15,61 +11,35 @@ impl Ipv6Range {
     pub fn new(start: Ipv6Addr, end: Ipv6Addr) -> Self {
         Self { start, end }
     }
-
-    pub fn start(&self) -> Ipv6Addr {
-        self.start
-    }
-
-    pub fn end(&self) -> Ipv6Addr {
-        self.end
-    }
 }
 
 impl AddressRange for Ipv6Range {
+    fn start(&self) -> IpAddr {
+        IpAddr::V6(self.start)
+    }
+
+    fn end(&self) -> IpAddr {
+        IpAddr::V6(self.end)
+    }
+
     fn smallest_common_cidr(&self) -> Cidr {
-        let diff = self.start.to_bits() ^ self.end.to_bits();
-        let prefix: u8 = diff.leading_zeros() as u8;
-        Cidr::V6(
-            Ipv6Cidr::new(self.start.to_bits() & !diff, prefix)
-                .expect("prefix is always less or equal to 128"),
-        )
+        let start = self.start.to_bits();
+        let end = self.end.to_bits();
+        super::smallest_common_cidr(start, end, |addr, prefix| {
+            Cidr::V6(
+                Ipv6Cidr::new(Ipv6Addr::from_bits(addr), prefix)
+                    .expect("prefix is always less or equal to 128"),
+            )
+        })
     }
 
     fn exact_fit(&self) -> Vec<Cidr> {
-        let mut result: Vec<Cidr> = Vec::new();
-        let mut start_addr = self.start.to_bits();
-        let end_addr = self.end.to_bits();
-
-        while start_addr <= end_addr {
-            let mut prefix = 128u8;
-            let mut guess_cidr =
-                Ipv6Cidr::new(start_addr, prefix).expect("prefix is always less or equal to 128");
-            let mut next_guess_cidr = guess_cidr;
-
-            while next_guess_cidr.network_address().to_bits() == start_addr
-                && next_guess_cidr.last_address().to_bits() <= end_addr
-            {
-                guess_cidr = next_guess_cidr;
-
-                if prefix == 0 {
-                    break;
-                }
-
-                prefix -= 1;
-                next_guess_cidr = Ipv6Cidr::new(start_addr, prefix)
-                    .expect("prefix is always less or equal to 128");
-            }
-
-            result.push(Cidr::V6(guess_cidr));
-
-            if prefix == 0 {
-                break;
-            }
-
-            start_addr = guess_cidr.last_address().to_bits() + 1;
-        }
-
-        result
+        super::exact_fit(self.start(), self.end(), 128u8, |addr, prefix| match addr {
+            IpAddr::V4(_) => unreachable!("IPv4 address cannot be IPv6"),
+            IpAddr::V6(ipv6_addr) => Cidr::V6(
+                Ipv6Cidr::new(ipv6_addr, prefix).expect("prefix is always less or equal to 128"),
+            ),
+        })
     }
 }
 

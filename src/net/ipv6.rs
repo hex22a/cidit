@@ -5,6 +5,8 @@ use std::{
 
 use thiserror::Error;
 
+use crate::net::IpNetwork;
+
 const MAX_IPV6_CIDR_PREFIX_LEN: u8 = 128;
 const MIN_REASONABLE_PREFIX_LEN: u8 = 96;
 
@@ -28,12 +30,12 @@ pub struct Ipv6Cidr {
 }
 
 impl Ipv6Cidr {
-    pub fn new(address: u128, prefix: u8) -> Result<Self, Ipv6CidrError> {
+    pub fn new(address: Ipv6Addr, prefix: u8) -> Result<Self, Ipv6CidrError> {
         if prefix > MAX_IPV6_CIDR_PREFIX_LEN {
             return Err(Ipv6CidrError::PrefixLen(prefix));
         }
         Ok(Self {
-            ip: Ipv6Addr::from_bits(address),
+            ip: address,
             prefix,
         })
     }
@@ -46,15 +48,16 @@ impl FromStr for Ipv6Cidr {
         let (ip, prefix) = s.split_once('/').ok_or(Ipv6CidrError::Format)?;
         let ip: Ipv6Addr = ip.parse().map_err(Ipv6CidrError::IpParse)?;
         let prefix: u8 = prefix.parse().map_err(|_| Ipv6CidrError::PrefixNan)?;
-        Self::new(ip.to_bits(), prefix)
+        Self::new(ip, prefix)
     }
 }
 
-pub trait SubnetSize {
+/// IPv6 Network
+pub trait Ipv6Network: IpNetwork {
     fn subnet_size(&self) -> String;
 }
 
-impl SubnetSize for Ipv6Cidr {
+impl Ipv6Network for Ipv6Cidr {
     fn subnet_size(&self) -> String {
         let prefix_len: u8 = self.prefix;
         let power: u8 = MAX_IPV6_CIDR_PREFIX_LEN - prefix_len;
@@ -66,28 +69,9 @@ impl SubnetSize for Ipv6Cidr {
     }
 }
 
-/// IPv6 Network
-pub trait Ipv6Network {
-    /// Get address part
-    fn addr(&self) -> Ipv6Addr;
+impl IpNetwork for Ipv6Cidr {
+    type Addr = Ipv6Addr;
 
-    /// Get prefix length
-    fn prefix_len(&self) -> u8;
-
-    /// Gets network mask address
-    fn netmask(&self) -> Ipv6Addr;
-
-    /// Gets network mask address
-    fn hostmask(&self) -> Ipv6Addr;
-
-    /// Gets arithmetical network address
-    fn network_address(&self) -> Ipv6Addr;
-
-    /// Gets last available address
-    fn last_address(&self) -> Ipv6Addr;
-}
-
-impl Ipv6Network for Ipv6Cidr {
     fn addr(&self) -> Ipv6Addr {
         self.ip
     }
@@ -110,7 +94,7 @@ impl Ipv6Network for Ipv6Cidr {
     }
 
     fn last_address(&self) -> Ipv6Addr {
-        Ipv6Addr::from_bits(self.network_address().to_bits() + self.hostmask().to_bits())
+        Ipv6Addr::from_bits(self.network_address().to_bits() | self.hostmask().to_bits())
     }
 
     fn hostmask(&self) -> Ipv6Addr {
@@ -153,15 +137,13 @@ mod test {
     fn test_construct_ipv6_cidr() {
         // Arrange
         let expected_prefix: u8 = 64;
-        let expected_binary_address: u128 =
-            Ipv6Addr::from_str(EXPECTED_IPV6_STR).unwrap().to_bits();
+        let expected_address = Ipv6Addr::from_str(EXPECTED_IPV6_STR).unwrap();
 
         // Act
-        let actual_cidr: Ipv6Cidr =
-            Ipv6Cidr::new(expected_binary_address, expected_prefix).unwrap();
+        let actual_cidr: Ipv6Cidr = Ipv6Cidr::new(expected_address, expected_prefix).unwrap();
 
         // Assert
-        assert_eq!(actual_cidr.ip.to_bits(), expected_binary_address);
+        assert_eq!(actual_cidr.ip, expected_address);
         assert_eq!(actual_cidr.prefix, expected_prefix);
     }
 
@@ -169,11 +151,10 @@ mod test {
     fn test_construct_ipv6_cidr_wrong_prefix() {
         // Arrange
         let expected_prefix: u8 = 129;
-        let expected_binary_address: u128 =
-            Ipv6Addr::from_str(EXPECTED_IPV6_STR).unwrap().to_bits();
+        let expected_address = Ipv6Addr::from_str(EXPECTED_IPV6_STR).unwrap();
 
         // Act
-        let actual_result = Ipv6Cidr::new(expected_binary_address, expected_prefix);
+        let actual_result = Ipv6Cidr::new(expected_address, expected_prefix);
 
         // Assert
         assert!(matches!(actual_result, Err(Ipv6CidrError::PrefixLen(_))));
@@ -241,7 +222,7 @@ mod test {
         let expected_prefix_len: u8 = 64;
         let expected_address = Ipv6Addr::from_str(EXPECTED_IPV6_STR).unwrap();
         let expected_ipv6_cidr = Ipv6Cidr::new(
-            EXPECTED_IPV6_STR.parse::<Ipv6Addr>().unwrap().to_bits(),
+            EXPECTED_IPV6_STR.parse::<Ipv6Addr>().unwrap(),
             expected_prefix_len,
         )
         .unwrap();
@@ -259,7 +240,7 @@ mod test {
         let expected_prefix_len: u8 = 64;
         let expected_netmask = Ipv6Addr::from_str("ffff:ffff:ffff:ffff::").unwrap();
         let expected_ipv6_cidr = Ipv6Cidr::new(
-            EXPECTED_IPV6_STR.parse::<Ipv6Addr>().unwrap().to_bits(),
+            EXPECTED_IPV6_STR.parse::<Ipv6Addr>().unwrap(),
             expected_prefix_len,
         )
         .unwrap();
@@ -277,7 +258,7 @@ mod test {
         let expected_prefix_len: u8 = 0;
         let expected_netmask = Ipv6Addr::from_str("::").unwrap();
         let expected_ipv6_cidr = Ipv6Cidr::new(
-            EXPECTED_IPV6_STR.parse::<Ipv6Addr>().unwrap().to_bits(),
+            EXPECTED_IPV6_STR.parse::<Ipv6Addr>().unwrap(),
             expected_prefix_len,
         )
         .unwrap();
@@ -296,7 +277,7 @@ mod test {
         let expected_netmask =
             Ipv6Addr::from_str("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff").unwrap();
         let expected_ipv6_cidr = Ipv6Cidr::new(
-            EXPECTED_IPV6_STR.parse::<Ipv6Addr>().unwrap().to_bits(),
+            EXPECTED_IPV6_STR.parse::<Ipv6Addr>().unwrap(),
             expected_prefix_len,
         )
         .unwrap();
@@ -314,7 +295,7 @@ mod test {
         let expected_prefix_len: u8 = 64;
         let expected_hostmask = Ipv6Addr::from_str("::ffff:ffff:ffff:ffff").unwrap();
         let expected_ipv6_cidr = Ipv6Cidr::new(
-            EXPECTED_IPV6_STR.parse::<Ipv6Addr>().unwrap().to_bits(),
+            EXPECTED_IPV6_STR.parse::<Ipv6Addr>().unwrap(),
             expected_prefix_len,
         )
         .unwrap();
@@ -333,7 +314,7 @@ mod test {
         let expected_hostmask =
             Ipv6Addr::from_str("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff").unwrap();
         let expected_ipv6_cidr = Ipv6Cidr::new(
-            EXPECTED_IPV6_STR.parse::<Ipv6Addr>().unwrap().to_bits(),
+            EXPECTED_IPV6_STR.parse::<Ipv6Addr>().unwrap(),
             expected_prefix_len,
         )
         .unwrap();
@@ -351,7 +332,7 @@ mod test {
         let expected_prefix_len: u8 = 128;
         let expected_hostmask = Ipv6Addr::from_str("::").unwrap();
         let expected_ipv6_cidr = Ipv6Cidr::new(
-            EXPECTED_IPV6_STR.parse::<Ipv6Addr>().unwrap().to_bits(),
+            EXPECTED_IPV6_STR.parse::<Ipv6Addr>().unwrap(),
             expected_prefix_len,
         )
         .unwrap();
@@ -369,7 +350,7 @@ mod test {
         let expected_prefix_len: u8 = 64;
         let expected_network_address = Ipv6Addr::from_str("2001:db8:1::").unwrap();
         let expected_ipv6_cidr = Ipv6Cidr::new(
-            EXPECTED_IPV6_STR.parse::<Ipv6Addr>().unwrap().to_bits(),
+            EXPECTED_IPV6_STR.parse::<Ipv6Addr>().unwrap(),
             expected_prefix_len,
         )
         .unwrap();
@@ -387,7 +368,7 @@ mod test {
         let expected_prefix_len: u8 = 64;
         let expected_last_address = Ipv6Addr::from_str("2001:db8:1::ffff:ffff:ffff:ffff").unwrap();
         let expected_ipv6_cidr = Ipv6Cidr::new(
-            EXPECTED_IPV6_STR.parse::<Ipv6Addr>().unwrap().to_bits(),
+            EXPECTED_IPV6_STR.parse::<Ipv6Addr>().unwrap(),
             expected_prefix_len,
         )
         .unwrap();
@@ -405,7 +386,7 @@ mod test {
         let expected_prefix_len: u8 = 97;
         let expected_subnet_size: &str = "2147483648";
         let expected_ipv6_cidr = Ipv6Cidr::new(
-            EXPECTED_IPV6_STR.parse::<Ipv6Addr>().unwrap().to_bits(),
+            EXPECTED_IPV6_STR.parse::<Ipv6Addr>().unwrap(),
             expected_prefix_len,
         )
         .unwrap();
@@ -423,7 +404,7 @@ mod test {
         let expected_prefix_len: u8 = 8;
         let expected_subnet_size: &str = "2^120";
         let expected_ipv6_cidr = Ipv6Cidr::new(
-            EXPECTED_IPV6_STR.parse::<Ipv6Addr>().unwrap().to_bits(),
+            EXPECTED_IPV6_STR.parse::<Ipv6Addr>().unwrap(),
             expected_prefix_len,
         )
         .unwrap();

@@ -1,11 +1,12 @@
 use ipv4::Ipv4Cidr;
 use ipv4::Ipv4CidrError;
+use std::fmt::Debug;
 use std::fmt::Display;
+use std::net::IpAddr;
 use std::str::FromStr;
 use thiserror::Error;
 
 use crate::Ipv4Network;
-use crate::Ipv6Network;
 use crate::net::ipv6::Ipv6Cidr;
 use crate::net::ipv6::Ipv6CidrError;
 
@@ -21,8 +22,31 @@ pub enum CidrParseError {
     },
 }
 
+/// General IpNetwork trait
+pub trait IpNetwork {
+    type Addr: Copy + PartialEq + PartialOrd + Debug + Display;
+
+    /// Get address part
+    fn addr(&self) -> Self::Addr;
+
+    /// Get prefix length
+    fn prefix_len(&self) -> u8;
+
+    /// Gets network mask address
+    fn netmask(&self) -> Self::Addr;
+
+    /// Gets network mask address
+    fn hostmask(&self) -> Self::Addr;
+
+    /// Gets arithmetical network address
+    fn network_address(&self) -> Self::Addr;
+
+    /// Gets last arithmetical address on a range
+    fn last_address(&self) -> Self::Addr;
+}
+
 /// Enum containing IPv4 and IPv6 variants
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum Cidr {
     V4(Ipv4Cidr),
     V6(Ipv6Cidr),
@@ -58,6 +82,52 @@ impl Display for Cidr {
             Cidr::V6(v6_cidr) => {
                 write!(f, "{}/{}", v6_cidr.addr(), v6_cidr.prefix_len())
             }
+        }
+    }
+}
+
+impl IpNetwork for Cidr {
+    type Addr = IpAddr;
+
+    fn addr(&self) -> IpAddr {
+        match self {
+            Cidr::V4(ipv4_cidr) => IpAddr::V4(ipv4_cidr.addr()),
+            Cidr::V6(ipv6_cidr) => IpAddr::V6(ipv6_cidr.addr()),
+        }
+    }
+
+    fn prefix_len(&self) -> u8 {
+        match self {
+            Cidr::V4(ipv4_cidr) => ipv4_cidr.prefix_len(),
+            Cidr::V6(ipv6_cidr) => ipv6_cidr.prefix_len(),
+        }
+    }
+
+    fn netmask(&self) -> IpAddr {
+        match self {
+            Cidr::V4(ipv4_cidr) => IpAddr::V4(ipv4_cidr.netmask()),
+            Cidr::V6(ipv6_cidr) => IpAddr::V6(ipv6_cidr.netmask()),
+        }
+    }
+
+    fn hostmask(&self) -> IpAddr {
+        match self {
+            Cidr::V4(ipv4_cidr) => IpAddr::V4(ipv4_cidr.hostmask()),
+            Cidr::V6(ipv6_cidr) => IpAddr::V6(ipv6_cidr.hostmask()),
+        }
+    }
+
+    fn network_address(&self) -> IpAddr {
+        match self {
+            Cidr::V4(ipv4_cidr) => IpAddr::V4(Ipv4Network::network_address(ipv4_cidr)),
+            Cidr::V6(ipv6_cidr) => IpAddr::V6(ipv6_cidr.network_address()),
+        }
+    }
+
+    fn last_address(&self) -> IpAddr {
+        match self {
+            Cidr::V4(ipv4_cidr) => IpAddr::V4(ipv4_cidr.last_address()),
+            Cidr::V6(ipv6_cidr) => IpAddr::V6(ipv6_cidr.last_address()),
         }
     }
 }

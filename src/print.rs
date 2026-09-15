@@ -1,4 +1,4 @@
-use cidit::{Cidr, Ipv4Network, Ipv6Network, POINT_TO_POINT_CIDR_PREFIX_LEN, SubnetSize};
+use cidit::{Cidr, IpNetwork, Ipv4Network, Ipv6Network, POINT_TO_POINT_CIDR_PREFIX_LEN};
 use serde::Serialize;
 use tabled::{
     Table, Tabled,
@@ -82,7 +82,7 @@ impl From<Cidr> for CidrTabledInfo {
                 let network = if v4.prefix_len() >= POINT_TO_POINT_CIDR_PREFIX_LEN {
                     String::from("")
                 } else {
-                    v4.network_address().to_string()
+                    Ipv4Network::network_address(&v4).to_string()
                 };
                 let broadcast = if v4.prefix_len() >= POINT_TO_POINT_CIDR_PREFIX_LEN {
                     String::from("")
@@ -123,7 +123,7 @@ impl From<Cidr> for CidrJsonInfo {
                 let network = if v4.prefix_len() >= POINT_TO_POINT_CIDR_PREFIX_LEN {
                     String::from("")
                 } else {
-                    v4.network_address().to_string()
+                    Ipv4Network::network_address(&v4).to_string()
                 };
                 let broadcast = if v4.prefix_len() >= POINT_TO_POINT_CIDR_PREFIX_LEN {
                     String::from("")
@@ -159,7 +159,7 @@ impl From<Cidr> for RangeTabledInfo {
             Cidr::V4(v4) => Self {
                 ip_ver: "v4",
                 cidr: format!("{}/{}", v4.addr(), v4.prefix_len()),
-                start: v4.network_address().to_string(),
+                start: Ipv4Network::network_address(&v4).to_string(),
                 end: v4.broadcast_address().to_string(),
             },
             Cidr::V6(v6) => Self {
@@ -178,7 +178,7 @@ impl From<Cidr> for RangeJsonInfo {
             Cidr::V4(v4) => Self {
                 ip_version: "v4",
                 cidr: format!("{}/{}", v4.addr(), v4.prefix_len()),
-                start: v4.network_address().to_string(),
+                start: Ipv4Network::network_address(&v4).to_string(),
                 end: v4.broadcast_address().to_string(),
             },
             Cidr::V6(v6) => Self {
@@ -232,19 +232,19 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::net::Ipv6Addr;
+    use std::net::{Ipv4Addr, Ipv6Addr};
 
     use cidit::{Ipv4Cidr, Ipv6Cidr};
 
     use super::*;
 
-    const EXPECTED_BINARY_ADDRESS: u32 = 0b00001010_00010110_10000111_10010000;
     const EXPECTED_IPV4_STR: &str = "10.22.135.144";
     const EXPECTED_IPV6_STR: &str = "2001:db8:1::ab9:c0a8:102";
 
     #[test]
     fn test_cidr_info_from_cidr_v4() {
         // Arrange
+        let expected_address: Ipv4Addr = EXPECTED_IPV4_STR.parse().unwrap();
         let expected_prefix: u8 = 24;
         let expected_cidr_string: String = format!("{EXPECTED_IPV4_STR}/{expected_prefix}");
         let expected_subnet_address: String = String::from("10.22.135.0");
@@ -254,7 +254,7 @@ mod tests {
         let expected_cidr_info = CidrTabledInfo {
             ip_ver: "v4",
             cidr: expected_cidr_string,
-            address: String::from(EXPECTED_IPV4_STR),
+            address: expected_address.to_string(),
             prefix: expected_prefix,
             network: expected_subnet_address,
             first_usable: expected_first_usable_ip,
@@ -265,7 +265,7 @@ mod tests {
             hostmask: String::from(""),
         };
 
-        let expected_cidr = Ipv4Cidr::new(EXPECTED_BINARY_ADDRESS, expected_prefix).unwrap();
+        let expected_cidr = Ipv4Cidr::new(expected_address, expected_prefix).unwrap();
 
         // Act
         let actual_cidr_info = CidrTabledInfo::from(Cidr::V4(expected_cidr));
@@ -277,6 +277,7 @@ mod tests {
     #[test]
     fn test_cidr_info_from_cidr_v4_point_to_point() {
         // Arrange
+        let expected_address: Ipv4Addr = EXPECTED_IPV4_STR.parse().unwrap();
         let expected_prefix: u8 = 31;
         let expected_cidr_string: String = format!("{EXPECTED_IPV4_STR}/{expected_prefix}");
         let expected_subnet_address: String = String::from("");
@@ -286,7 +287,7 @@ mod tests {
         let expected_cidr_info = CidrTabledInfo {
             ip_ver: "v4",
             cidr: expected_cidr_string,
-            address: String::from(EXPECTED_IPV4_STR),
+            address: expected_address.to_string(),
             prefix: expected_prefix,
             network: expected_subnet_address,
             first_usable: expected_first_usable_ip,
@@ -297,7 +298,7 @@ mod tests {
             hostmask: String::from(""),
         };
 
-        let expected_cidr = Ipv4Cidr::new(EXPECTED_BINARY_ADDRESS, expected_prefix).unwrap();
+        let expected_cidr = Ipv4Cidr::new(expected_address, expected_prefix).unwrap();
 
         // Act
         let actual_cidr_info = CidrTabledInfo::from(Cidr::V4(expected_cidr));
@@ -309,6 +310,7 @@ mod tests {
     #[test]
     fn test_cidr_info_from_cidr_v4_single_ip() {
         // Arrange
+        let expected_address: Ipv4Addr = EXPECTED_IPV4_STR.parse().unwrap();
         let expected_prefix: u8 = 32;
         let expected_cidr_string: String = format!("{EXPECTED_IPV4_STR}/{expected_prefix}");
         let expected_subnet_address: String = String::from("");
@@ -318,7 +320,7 @@ mod tests {
         let expected_cidr_info = CidrTabledInfo {
             ip_ver: "v4",
             cidr: expected_cidr_string,
-            address: String::from(EXPECTED_IPV4_STR),
+            address: expected_address.to_string(),
             prefix: expected_prefix,
             network: expected_subnet_address,
             first_usable: expected_first_usable_ip,
@@ -329,7 +331,7 @@ mod tests {
             hostmask: String::from(""),
         };
 
-        let expected_cidr = Ipv4Cidr::new(EXPECTED_BINARY_ADDRESS, expected_prefix).unwrap();
+        let expected_cidr = Ipv4Cidr::new(expected_address, expected_prefix).unwrap();
 
         // Act
         let actual_cidr_info = CidrTabledInfo::from(Cidr::V4(expected_cidr));
@@ -341,21 +343,18 @@ mod tests {
     #[test]
     fn test_cidr_info_from_cidr_v6() {
         // Arrange
+        let expected_address: Ipv6Addr = EXPECTED_IPV6_STR.parse().unwrap();
         let expected_prefix_len: u8 = 64;
         let expected_cidr_str: String = format!("{EXPECTED_IPV6_STR}/{expected_prefix_len}");
         let expected_subnet_size: String = "2^64".to_string();
         let expected_netmask: String = "ffff:ffff:ffff:ffff::".to_string();
         let expected_hostmask: String = "::ffff:ffff:ffff:ffff".to_string();
         let expected_network: String = "2001:db8:1::".to_string();
-        let expected_ipv6_cidr = Ipv6Cidr::new(
-            EXPECTED_IPV6_STR.parse::<Ipv6Addr>().unwrap().to_bits(),
-            expected_prefix_len,
-        )
-        .unwrap();
+        let expected_ipv6_cidr = Ipv6Cidr::new(expected_address, expected_prefix_len).unwrap();
         let expected_cidr_info = CidrTabledInfo {
             ip_ver: "v6",
             cidr: expected_cidr_str,
-            address: EXPECTED_IPV6_STR.to_string(),
+            address: expected_address.to_string(),
             prefix: expected_prefix_len,
             netmask: expected_netmask,
             hostmask: expected_hostmask,
@@ -376,6 +375,7 @@ mod tests {
     #[test]
     fn test_range_tabled_info_from_cidr_v4() {
         // Arrange
+        let expected_address: Ipv4Addr = EXPECTED_IPV4_STR.parse().unwrap();
         let expected_prefix: u8 = 24;
         let expected_cidr_string: String = format!("{EXPECTED_IPV4_STR}/{expected_prefix}");
         let expected_subnet_address: String = String::from("10.22.135.0");
@@ -387,7 +387,7 @@ mod tests {
             end: expected_broadcast_ip,
         };
 
-        let expected_cidr = Ipv4Cidr::new(EXPECTED_BINARY_ADDRESS, expected_prefix).unwrap();
+        let expected_cidr = Ipv4Cidr::new(expected_address, expected_prefix).unwrap();
 
         // Act
         let actual_cidr_info = RangeTabledInfo::from(Cidr::V4(expected_cidr));
@@ -399,6 +399,7 @@ mod tests {
     #[test]
     fn test_range_tabled_info_from_cidr_v6() {
         // Arrange
+        let expected_address: Ipv6Addr = EXPECTED_IPV6_STR.parse().unwrap();
         let expected_prefix_len: u8 = 64;
         let expected_cidr_str: String = format!("{EXPECTED_IPV6_STR}/{expected_prefix_len}");
         let expected_cidr_info = RangeTabledInfo {
@@ -408,11 +409,7 @@ mod tests {
             end: String::from("2001:db8:1:0:ffff:ffff:ffff:ffff"),
         };
 
-        let expected_cidr = Ipv6Cidr::new(
-            EXPECTED_IPV6_STR.parse::<Ipv6Addr>().unwrap().to_bits(),
-            expected_prefix_len,
-        )
-        .unwrap();
+        let expected_cidr = Ipv6Cidr::new(expected_address, expected_prefix_len).unwrap();
 
         // Act
         let actual_cidr_info = RangeTabledInfo::from(Cidr::V6(expected_cidr));
@@ -424,6 +421,7 @@ mod tests {
     #[test]
     fn test_range_json_info_from_cidr_v4() {
         // Arrange
+        let expected_address: Ipv4Addr = EXPECTED_IPV4_STR.parse().unwrap();
         let expected_prefix: u8 = 24;
         let expected_cidr_string: String = format!("{EXPECTED_IPV4_STR}/{expected_prefix}");
         let expected_subnet_address: String = String::from("10.22.135.0");
@@ -435,7 +433,7 @@ mod tests {
             end: expected_broadcast_ip,
         };
 
-        let expected_cidr = Ipv4Cidr::new(EXPECTED_BINARY_ADDRESS, expected_prefix).unwrap();
+        let expected_cidr = Ipv4Cidr::new(expected_address, expected_prefix).unwrap();
 
         // Act
         let actual_cidr_info = RangeJsonInfo::from(Cidr::V4(expected_cidr));
@@ -447,6 +445,7 @@ mod tests {
     #[test]
     fn test_range_json_info_from_cidr_v6() {
         // Arrange
+        let expected_address: Ipv6Addr = EXPECTED_IPV6_STR.parse().unwrap();
         let expected_prefix_len: u8 = 64;
         let expected_cidr_str: String = format!("{EXPECTED_IPV6_STR}/{expected_prefix_len}");
         let expected_cidr_info = RangeJsonInfo {
@@ -456,11 +455,7 @@ mod tests {
             end: String::from("2001:db8:1:0:ffff:ffff:ffff:ffff"),
         };
 
-        let expected_cidr = Ipv6Cidr::new(
-            EXPECTED_IPV6_STR.parse::<Ipv6Addr>().unwrap().to_bits(),
-            expected_prefix_len,
-        )
-        .unwrap();
+        let expected_cidr = Ipv6Cidr::new(expected_address, expected_prefix_len).unwrap();
 
         // Act
         let actual_cidr_info = RangeJsonInfo::from(Cidr::V6(expected_cidr));

@@ -1,6 +1,6 @@
-use std::net::Ipv4Addr;
+use std::net::{IpAddr, Ipv4Addr};
 
-use crate::{Cidr, Ipv4Cidr, net::ipv4::Ipv4Network, range::AddressRange};
+use crate::{Cidr, Ipv4Cidr, range::AddressRange};
 
 pub struct Ipv4Range {
     start: Ipv4Addr,
@@ -11,61 +11,35 @@ impl Ipv4Range {
     pub fn new(start: Ipv4Addr, end: Ipv4Addr) -> Self {
         Self { start, end }
     }
-
-    pub fn start(&self) -> Ipv4Addr {
-        self.start
-    }
-
-    pub fn end(&self) -> Ipv4Addr {
-        self.end
-    }
 }
 
 impl AddressRange for Ipv4Range {
+    fn start(&self) -> IpAddr {
+        IpAddr::V4(self.start)
+    }
+
+    fn end(&self) -> IpAddr {
+        IpAddr::V4(self.end)
+    }
+
     fn smallest_common_cidr(&self) -> Cidr {
-        let diff = self.start.to_bits() ^ self.end.to_bits();
-        let prefix: u8 = diff.leading_zeros() as u8;
-        Cidr::V4(
-            Ipv4Cidr::new(self.start.to_bits() & !diff, prefix)
-                .expect("prefix is always less or equal to 32"),
-        )
+        let start = self.start.to_bits();
+        let end = self.end.to_bits();
+        super::smallest_common_cidr(start, end, |addr, prefix| {
+            Cidr::V4(
+                Ipv4Cidr::new(Ipv4Addr::from_bits(addr), prefix)
+                    .expect("prefix is always less or equal to 32"),
+            )
+        })
     }
 
     fn exact_fit(&self) -> Vec<Cidr> {
-        let mut result: Vec<Cidr> = Vec::new();
-        let mut start_addr = self.start.to_bits();
-        let end_addr = self.end.to_bits();
-
-        while start_addr <= end_addr {
-            let mut prefix = 32u8;
-            let mut guess_cidr: Ipv4Cidr =
-                Ipv4Cidr::new(start_addr, prefix).expect("prefix is always less or equal to 32");
-            let mut next_guess_cidr = guess_cidr;
-
-            while next_guess_cidr.network_address().to_bits() == start_addr
-                && next_guess_cidr.broadcast_address().to_bits() <= end_addr
-            {
-                guess_cidr = next_guess_cidr;
-
-                if prefix == 0 {
-                    break;
-                }
-
-                prefix -= 1;
-                next_guess_cidr = Ipv4Cidr::new(start_addr, prefix)
-                    .expect("prefix is always less or equal to 32");
-            }
-
-            result.push(Cidr::V4(guess_cidr));
-
-            if prefix == 0 {
-                break;
-            }
-
-            start_addr = guess_cidr.broadcast_address().to_bits() + 1;
-        }
-
-        result
+        super::exact_fit(self.start(), self.end(), 32u8, |addr, prefix| match addr {
+            IpAddr::V4(ipv4_addr) => Cidr::V4(
+                Ipv4Cidr::new(ipv4_addr, prefix).expect("prefix is always less or equal to 32"),
+            ),
+            IpAddr::V6(_) => unreachable!("IPv4 address cannot be IPv6"),
+        })
     }
 }
 
