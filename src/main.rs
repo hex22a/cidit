@@ -50,46 +50,42 @@ fn main() {
                 std::process::exit(1);
             });
 
-            let cidrs: Vec<Cidr> = if args.exact {
-                range.exact_fit()
+            let cidrs = if args.exact {
+                range.exact_fit().into_iter()
             } else {
-                vec![range.smallest_common_cidr()]
+                vec![range.smallest_common_cidr()].into_iter()
             };
 
             match args.format {
                 OutputFormat::Json => {
-                    print::print_json::<RangeJsonInfo>(cidrs, args.pretty);
+                    print::print_json::<RangeJsonInfo>(cidrs.collect(), args.pretty);
                 }
                 OutputFormat::Table => {
-                    print::print_table::<RangeTabledInfo>(cidrs, args.headless);
+                    print::print_table::<RangeTabledInfo>(cidrs.collect(), args.headless);
                 }
                 OutputFormat::Ndjson => {
-                    print::print_ndjson::<RangeJsonInfo>(cidrs);
+                    print::print_ndjson::<RangeJsonInfo, _>(cidrs);
                 }
             }
         }
         None => {
-            let cidrs: Vec<Cidr> = args
-                .cidrs
-                .iter()
-                .map(|cidr| match cidr.parse::<Cidr>() {
-                    Ok(cidr) => cidr,
-                    Err(err) => {
-                        eprintln!("'{}': {}", cidr, err);
-                        std::process::exit(1);
-                    }
-                })
-                .collect::<Vec<Cidr>>();
+            let cidrs = args.cidrs.iter().map(|cidr| match cidr.parse::<Cidr>() {
+                Ok(cidr) => cidr,
+                Err(err) => {
+                    eprintln!("'{}': {}", cidr, err);
+                    std::process::exit(1);
+                }
+            });
 
             match args.format {
                 OutputFormat::Json => {
-                    print::print_json::<CidrJsonInfo>(cidrs, args.pretty);
+                    print::print_json::<CidrJsonInfo>(cidrs.collect(), args.pretty);
                 }
                 OutputFormat::Table => {
-                    print::print_table::<CidrTabledInfo>(cidrs, args.headless);
+                    print::print_table::<CidrTabledInfo>(cidrs.collect(), args.headless);
                 }
                 OutputFormat::Ndjson => {
-                    print::print_ndjson::<CidrJsonInfo>(cidrs);
+                    print::print_ndjson::<CidrJsonInfo, _>(cidrs);
                 }
             }
         }

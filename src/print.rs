@@ -206,21 +206,21 @@ where
     }
 }
 
-pub fn print_ndjson<T>(cidrs: Vec<Cidr>)
+pub fn print_ndjson<T, I>(cidrs: I)
 where
     T: Serialize + From<Cidr>,
+    I: Iterator<Item = Cidr>,
 {
-    cidrs
-        .into_iter()
-        .map(T::from)
-        .for_each(|item| println!("{}", serde_json::to_string(&item).unwrap()));
+    for item in cidrs.map(T::from) {
+        println!("{}", serde_json::to_string(&item).unwrap())
+    }
 }
 
-pub fn print_table<T>(results: Vec<Cidr>, headless: bool)
+pub fn print_table<T>(cidrs: Vec<Cidr>, headless: bool)
 where
     T: Tabled + From<Cidr>,
 {
-    let rows: Vec<T> = results.into_iter().map(T::from).collect();
+    let rows: Vec<T> = cidrs.into_iter().map(T::from).collect();
     let mut table = Table::new(rows);
     table.with(Style::blank());
     if headless {
