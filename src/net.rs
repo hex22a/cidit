@@ -10,6 +10,7 @@ use crate::Ipv4Network;
 use crate::net::ipv6::Ipv6Cidr;
 use crate::net::ipv6::Ipv6CidrError;
 
+pub mod dto;
 pub mod ipv4;
 pub mod ipv6;
 

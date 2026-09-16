@@ -1,9 +1,9 @@
 mod print;
 
-use cidit::{AddressRange, Cidr, IpRange};
+use cidit::{
+    AddressRange, Cidr, CidrCombinedInfo, CidrInfo, IpRange, RangeCombinedInfo, RangeInfo,
+};
 use clap::{Parser, ValueEnum};
-
-use crate::print::{CidrJsonInfo, CidrTabledInfo, RangeJsonInfo, RangeTabledInfo};
 
 #[derive(ValueEnum, Clone, Debug)]
 enum OutputFormat {
@@ -31,8 +31,8 @@ struct Args {
     headless: bool,
 
     /// Get smallest CIDR that contains a given range
-    #[arg(short, long)]
-    range: Option<String>,
+    #[arg(short, long, num_args=1..)]
+    range: Option<Vec<String>>,
 
     /// Get one or more CIDR blocks to exactly match the provided range
     /// (only for --range)
@@ -44,27 +44,32 @@ fn main() {
     let args = Args::parse();
 
     match args.range {
-        Some(range) => {
-            let range: IpRange = range.parse::<IpRange>().unwrap_or_else(|e| {
-                eprintln!("'{range}': {e}");
-                std::process::exit(1);
-            });
+        Some(ranges) => {
+            let cidrs = ranges.iter().flat_map(|range| {
+                let range = range.parse::<IpRange>().unwrap_or_else(|e| {
+                    eprintln!("'{range}': {e}");
+                    std::process::exit(1);
+                });
 
-            let cidrs = if args.exact {
-                range.exact_fit().into_iter()
-            } else {
-                vec![range.smallest_common_cidr()].into_iter()
-            };
+                if args.exact {
+                    range.exact_fit().into_iter()
+                } else {
+                    vec![range.smallest_common_cidr()].into_iter()
+                }
+            });
 
             match args.format {
                 OutputFormat::Json => {
-                    print::print_json::<RangeJsonInfo>(cidrs.collect(), args.pretty);
+                    let info = cidrs.map(RangeInfo::from);
+                    print::print_json(info, args.pretty);
                 }
                 OutputFormat::Table => {
-                    print::print_table::<RangeTabledInfo>(cidrs.collect(), args.headless);
+                    let info = cidrs.map(RangeCombinedInfo::from);
+                    print::print_table(info, args.headless);
                 }
                 OutputFormat::Ndjson => {
-                    print::print_ndjson::<RangeJsonInfo, _>(cidrs);
+                    let info = cidrs.map(RangeInfo::from);
+                    print::print_ndjson(info);
                 }
             }
         }
@@ -79,13 +84,16 @@ fn main() {
 
             match args.format {
                 OutputFormat::Json => {
-                    print::print_json::<CidrJsonInfo>(cidrs.collect(), args.pretty);
+                    let info = cidrs.map(CidrInfo::from);
+                    print::print_json(info, args.pretty);
                 }
                 OutputFormat::Table => {
-                    print::print_table::<CidrTabledInfo>(cidrs.collect(), args.headless);
+                    let info = cidrs.map(CidrCombinedInfo::from);
+                    print::print_table(info, args.headless);
                 }
                 OutputFormat::Ndjson => {
-                    print::print_ndjson::<CidrJsonInfo, _>(cidrs);
+                    let info = cidrs.map(CidrInfo::from);
+                    print::print_ndjson(info);
                 }
             }
         }

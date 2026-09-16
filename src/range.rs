@@ -15,8 +15,9 @@ use crate::{
     range::{ipv4::Ipv4Range, ipv6::Ipv6Range},
 };
 
-mod ipv4;
-mod ipv6;
+pub mod dto;
+pub mod ipv4;
+pub mod ipv6;
 
 #[derive(Debug, Error)]
 pub enum RangeError {
