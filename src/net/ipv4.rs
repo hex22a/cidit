@@ -1,4 +1,5 @@
 use std::{
+    fmt::Display,
     net::{AddrParseError, Ipv4Addr},
     str::FromStr,
 };
@@ -37,6 +38,23 @@ impl Ipv4Cidr {
             ip: address,
             prefix,
         })
+    }
+}
+
+impl FromStr for Ipv4Cidr {
+    type Err = Ipv4CidrError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let (ip_str, prefix) = s.split_once('/').ok_or(Ipv4CidrError::Format)?;
+        let ip: Ipv4Addr = ip_str.parse().map_err(Ipv4CidrError::IpParse)?;
+        let prefix: u8 = prefix.parse().map_err(|_| Ipv4CidrError::PrefixNan)?;
+        Self::new(ip, prefix)
+    }
+}
+
+impl Display for Ipv4Cidr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}/{}", self.ip, self.prefix)
     }
 }
 
@@ -107,17 +125,6 @@ impl IpNetwork for Ipv4Cidr {
         } else {
             !0u32 >> self.prefix
         }
-    }
-}
-
-impl FromStr for Ipv4Cidr {
-    type Err = Ipv4CidrError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (ip_str, prefix) = s.split_once('/').ok_or(Ipv4CidrError::Format)?;
-        let ip: Ipv4Addr = ip_str.parse().map_err(Ipv4CidrError::IpParse)?;
-        let prefix: u8 = prefix.parse().map_err(|_| Ipv4CidrError::PrefixNan)?;
-        Self::new(ip, prefix)
     }
 }
 

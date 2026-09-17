@@ -24,13 +24,13 @@ impl From<Cidr> for RangeCombinedInfo {
         match value {
             Cidr::V4(v4) => Self {
                 ip_ver: "v4",
-                cidr: format!("{}/{}", v4.addr(), v4.prefix_len()),
+                cidr: v4.to_string(),
                 start: v4.first_address().to_string(),
                 end: v4.last_address().to_string(),
             },
             Cidr::V6(v6) => Self {
                 ip_ver: "v6",
-                cidr: format!("{}/{}", v6.addr(), v6.prefix_len()),
+                cidr: v6.to_string(),
                 start: v6.first_address().to_string(),
                 end: v6.last_address().to_string(),
             },
@@ -43,13 +43,13 @@ impl From<Cidr> for RangeInfo {
         match value {
             Cidr::V4(v4) => Self {
                 ip_version: "v4",
-                cidr: format!("{}/{}", v4.addr(), v4.prefix_len()),
+                cidr: v4.to_string(),
                 start: v4.first_address().to_string(),
                 end: v4.last_address().to_string(),
             },
             Cidr::V6(v6) => Self {
                 ip_version: "v6",
-                cidr: format!("{}/{}", v6.addr(), v6.prefix_len()),
+                cidr: v6.to_string(),
                 start: v6.first_address().to_string(),
                 end: v6.last_address().to_string(),
             },

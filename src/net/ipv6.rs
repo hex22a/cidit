@@ -1,4 +1,5 @@
 use std::{
+    fmt::Display,
     net::{AddrParseError, Ipv6Addr},
     str::FromStr,
 };
@@ -50,6 +51,12 @@ impl FromStr for Ipv6Cidr {
         let ip: Ipv6Addr = ip.parse().map_err(Ipv6CidrError::IpParse)?;
         let prefix: u8 = prefix.parse().map_err(|_| Ipv6CidrError::PrefixNan)?;
         Self::new(ip, prefix)
+    }
+}
+
+impl Display for Ipv6Cidr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}/{}", self.ip, self.prefix)
     }
 }
 

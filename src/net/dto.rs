@@ -53,7 +53,7 @@ impl From<Cidr> for CidrCombinedInfo {
         match value {
             Cidr::V4(v4) => CidrCombinedInfo {
                 ip_ver: "v4",
-                cidr: format!("{}/{}", v4.addr(), v4.prefix_len()),
+                cidr: v4.to_string(),
                 address: v4.addr().to_string(),
                 prefix: v4.prefix_len(),
                 first_usable: v4.first_usable().to_string(),
@@ -70,7 +70,7 @@ impl From<Cidr> for CidrCombinedInfo {
             },
             Cidr::V6(v6) => CidrCombinedInfo {
                 ip_ver: "v6",
-                cidr: format!("{}/{}", v6.addr(), v6.prefix_len()),
+                cidr: v6.to_string(),
                 address: v6.addr().to_string(),
                 prefix: v6.prefix_len(),
                 netmask: v6.netmask().to_string(),
@@ -87,7 +87,7 @@ impl From<Cidr> for CidrInfo {
     fn from(value: Cidr) -> Self {
         match value {
             Cidr::V4(v4) => CidrInfo::V4(Ipv4CidrInfo {
-                cidr: format!("{}/{}", v4.addr(), v4.prefix_len()),
+                cidr: v4.to_string(),
                 address: v4.addr().to_string(),
                 prefix_length: v4.prefix_len(),
                 first_usable: v4.first_usable().to_string(),
@@ -102,7 +102,7 @@ impl From<Cidr> for CidrInfo {
                     .unwrap_or_default(),
             }),
             Cidr::V6(v6) => CidrInfo::V6(Ipv6CidrInfo {
-                cidr: format!("{}/{}", v6.addr(), v6.prefix_len()),
+                cidr: v6.to_string(),
                 address: v6.addr().to_string(),
                 prefix_length: v6.prefix_len(),
                 netmask: v6.netmask().to_string(),

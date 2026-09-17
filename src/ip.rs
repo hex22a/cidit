@@ -1,6 +1,6 @@
 use std::net::{Ipv4Addr, Ipv6Addr};
 
-pub trait IpBits {
+pub(crate) trait IpBits {
     fn leading_zeros(self) -> u8;
 }
 
@@ -16,7 +16,7 @@ impl IpBits for u128 {
     }
 }
 
-pub trait Incrementable: Sized {
+pub(crate) trait Incrementable: Sized {
     fn checked_add_one(self) -> Option<Self>;
 }
 
