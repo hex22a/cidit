@@ -3,10 +3,11 @@ use ipv4::Ipv4CidrError;
 use std::fmt::Debug;
 use std::fmt::Display;
 use std::net::IpAddr;
+use std::ops::BitAnd;
+use std::ops::BitOr;
 use std::str::FromStr;
 use thiserror::Error;
 
-use crate::Ipv4Network;
 use crate::net::ipv6::Ipv6Cidr;
 use crate::net::ipv6::Ipv6CidrError;
 
@@ -26,23 +27,30 @@ pub enum CidrParseError {
 /// General IpNetwork trait
 pub trait IpNetwork {
     type Addr: Copy + PartialEq + PartialOrd + Debug + Display;
+    type Bits: BitAnd + BitOr;
 
-    /// Get address part
+    /// Address
     fn addr(&self) -> Self::Addr;
 
-    /// Get prefix length
+    /// Prefix length
     fn prefix_len(&self) -> u8;
 
-    /// Gets network mask address
+    /// Network mask bits
+    fn netmask_bits(&self) -> Self::Bits;
+
+    /// Network mask address
     fn netmask(&self) -> Self::Addr;
 
-    /// Gets network mask address
+    /// Host mask bits
+    fn hostmask_bits(&self) -> Self::Bits;
+
+    /// Host mask address
     fn hostmask(&self) -> Self::Addr;
 
-    /// Gets arithmetical network address
-    fn network_address(&self) -> Self::Addr;
+    /// First arithmetical address in a range
+    fn first_address(&self) -> Self::Addr;
 
-    /// Gets last arithmetical address on a range
+    /// Last arithmetical address in a range
     fn last_address(&self) -> Self::Addr;
 }
 
@@ -89,6 +97,7 @@ impl Display for Cidr {
 
 impl IpNetwork for Cidr {
     type Addr = IpAddr;
+    type Bits = u128;
 
     fn addr(&self) -> IpAddr {
         match self {
@@ -118,10 +127,10 @@ impl IpNetwork for Cidr {
         }
     }
 
-    fn network_address(&self) -> IpAddr {
+    fn first_address(&self) -> IpAddr {
         match self {
-            Cidr::V4(ipv4_cidr) => IpAddr::V4(Ipv4Network::network_address(ipv4_cidr)),
-            Cidr::V6(ipv6_cidr) => IpAddr::V6(ipv6_cidr.network_address()),
+            Cidr::V4(ipv4_cidr) => IpAddr::V4(ipv4_cidr.first_address()),
+            Cidr::V6(ipv6_cidr) => IpAddr::V6(ipv6_cidr.first_address()),
         }
     }
 
@@ -129,6 +138,20 @@ impl IpNetwork for Cidr {
         match self {
             Cidr::V4(ipv4_cidr) => IpAddr::V4(ipv4_cidr.last_address()),
             Cidr::V6(ipv6_cidr) => IpAddr::V6(ipv6_cidr.last_address()),
+        }
+    }
+
+    fn netmask_bits(&self) -> Self::Bits {
+        match self {
+            Cidr::V4(ipv4_cidr) => ipv4_cidr.netmask_bits() as u128,
+            Cidr::V6(ipv6_cidr) => ipv6_cidr.netmask_bits(),
+        }
+    }
+
+    fn hostmask_bits(&self) -> Self::Bits {
+        match self {
+            Cidr::V4(ipv4_cidr) => ipv4_cidr.hostmask_bits() as u128,
+            Cidr::V6(ipv6_cidr) => ipv6_cidr.hostmask_bits(),
         }
     }
 }

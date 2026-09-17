@@ -1,7 +1,7 @@
 use serde::Serialize;
 use tabled::Tabled;
 
-use crate::{Cidr, IpNetwork, Ipv4Network};
+use crate::{Cidr, IpNetwork};
 
 #[derive(Debug, Tabled, PartialEq)]
 pub struct RangeCombinedInfo {
@@ -25,13 +25,13 @@ impl From<Cidr> for RangeCombinedInfo {
             Cidr::V4(v4) => Self {
                 ip_ver: "v4",
                 cidr: format!("{}/{}", v4.addr(), v4.prefix_len()),
-                start: Ipv4Network::network_address(&v4).to_string(),
-                end: v4.broadcast_address().to_string(),
+                start: v4.first_address().to_string(),
+                end: v4.last_address().to_string(),
             },
             Cidr::V6(v6) => Self {
                 ip_ver: "v6",
                 cidr: format!("{}/{}", v6.addr(), v6.prefix_len()),
-                start: v6.network_address().to_string(),
+                start: v6.first_address().to_string(),
                 end: v6.last_address().to_string(),
             },
         }
@@ -44,13 +44,13 @@ impl From<Cidr> for RangeInfo {
             Cidr::V4(v4) => Self {
                 ip_version: "v4",
                 cidr: format!("{}/{}", v4.addr(), v4.prefix_len()),
-                start: Ipv4Network::network_address(&v4).to_string(),
-                end: v4.broadcast_address().to_string(),
+                start: v4.first_address().to_string(),
+                end: v4.last_address().to_string(),
             },
             Cidr::V6(v6) => Self {
                 ip_version: "v6",
                 cidr: format!("{}/{}", v6.addr(), v6.prefix_len()),
-                start: v6.network_address().to_string(),
+                start: v6.first_address().to_string(),
                 end: v6.last_address().to_string(),
             },
         }

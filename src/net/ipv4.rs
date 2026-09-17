@@ -7,7 +7,7 @@ use thiserror::Error;
 use crate::net::IpNetwork;
 
 const MAX_IPV4_CIDR_PREFIX_LEN: u8 = 32;
-pub const POINT_TO_POINT_CIDR_PREFIX_LEN: u8 = 31;
+const POINT_TO_POINT_CIDR_PREFIX_LEN: u8 = 31;
 
 #[derive(Debug, Error, PartialEq)]
 pub enum Ipv4CidrError {
@@ -42,27 +42,32 @@ impl Ipv4Cidr {
 
 /// IPv4 Network
 pub trait Ipv4Network: IpNetwork {
-    /// Gets arithmetical network address for all network masks
-    /// including /31 for point-to-point connections and /32 for single host.
-    /// [RFC 3021](https://datatracker.ietf.org/doc/html/rfc3021)
-    fn network_address(&self) -> Ipv4Addr;
+    /// Gets network address for IPv4.
+    /// Returns None for network masks
+    /// /31 for point-to-point connections
+    /// ([RFC 3021](https://datatracker.ietf.org/doc/html/rfc3021))
+    /// and /32 for single host
+    fn network_address(&self) -> Option<Ipv4Addr>;
 
-    /// Gets arithmetical broadcast address for all network masks
-    /// including /31 for point-to-point connections and /32 for single host.
-    /// [RFC 3021](https://datatracker.ietf.org/doc/html/rfc3021)
-    fn broadcast_address(&self) -> Ipv4Addr;
+    /// Gets broadcast address for IPv4.
+    /// Returns None for network masks
+    /// /31 for point-to-point connections
+    /// ([RFC 3021](https://datatracker.ietf.org/doc/html/rfc3021))
+    /// and /32 for single host
+    fn broadcast_address(&self) -> Option<Ipv4Addr>;
 
     /// Gets first usable IP address.
-    /// For /31 network mask is the same as arithmetical network address
+    /// For /31 network mask is the same as arithmetical first address
     fn first_usable(&self) -> Ipv4Addr;
 
     /// Gets last usable IP address.
-    /// For /31 network mask is the same as arithmetical broadcast address
+    /// For /31 network mask is the same as arithmetical first address
     fn last_usable(&self) -> Ipv4Addr;
 }
 
 impl IpNetwork for Ipv4Cidr {
     type Addr = Ipv4Addr;
+    type Bits = u32;
 
     fn addr(&self) -> Ipv4Addr {
         self.ip
@@ -73,31 +78,35 @@ impl IpNetwork for Ipv4Cidr {
     }
 
     fn netmask(&self) -> Ipv4Addr {
-        let mask = if self.prefix == 0 {
-            0
-        } else {
-            !0u32 << (MAX_IPV4_CIDR_PREFIX_LEN - self.prefix)
-        };
-        Ipv4Addr::from_bits(mask)
+        Ipv4Addr::from_bits(self.netmask_bits())
     }
 
     fn hostmask(&self) -> Ipv4Addr {
-        let mask = if self.prefix == MAX_IPV4_CIDR_PREFIX_LEN {
-            0
-        } else {
-            !0u32 >> self.prefix
-        };
-        Ipv4Addr::from_bits(mask)
+        Ipv4Addr::from_bits(self.hostmask_bits())
     }
 
-    fn network_address(&self) -> Ipv4Addr {
-        Ipv4Addr::from_bits(self.ip.to_bits() & self.netmask().to_bits())
+    fn first_address(&self) -> Ipv4Addr {
+        Ipv4Addr::from_bits(self.ip.to_bits() & self.netmask_bits())
     }
 
     fn last_address(&self) -> Ipv4Addr {
-        Ipv4Addr::from_bits(
-            Ipv4Network::network_address(self).to_bits() | self.hostmask().to_bits(),
-        )
+        Ipv4Addr::from_bits(IpNetwork::first_address(self).to_bits() | self.hostmask_bits())
+    }
+
+    fn netmask_bits(&self) -> Self::Bits {
+        if self.prefix == 0 {
+            0
+        } else {
+            !0u32 << (MAX_IPV4_CIDR_PREFIX_LEN - self.prefix)
+        }
+    }
+
+    fn hostmask_bits(&self) -> Self::Bits {
+        if self.prefix == MAX_IPV4_CIDR_PREFIX_LEN {
+            0
+        } else {
+            !0u32 >> self.prefix
+        }
     }
 }
 
@@ -113,30 +122,34 @@ impl FromStr for Ipv4Cidr {
 }
 
 impl Ipv4Network for Ipv4Cidr {
-    fn broadcast_address(&self) -> Ipv4Addr {
-        IpNetwork::last_address(self)
+    fn network_address(&self) -> Option<Ipv4Addr> {
+        if self.prefix < POINT_TO_POINT_CIDR_PREFIX_LEN {
+            Some(self.first_address())
+        } else {
+            None
+        }
+    }
+
+    fn broadcast_address(&self) -> Option<Ipv4Addr> {
+        if self.prefix < POINT_TO_POINT_CIDR_PREFIX_LEN {
+            Some(self.last_address())
+        } else {
+            None
+        }
     }
 
     fn first_usable(&self) -> Ipv4Addr {
-        let network_address = Ipv4Network::network_address(self);
-        if self.prefix >= POINT_TO_POINT_CIDR_PREFIX_LEN {
-            network_address
-        } else {
-            Ipv4Addr::from_bits(network_address.to_bits() + 1)
+        match self.network_address() {
+            Some(network_address) => Ipv4Addr::from_bits(network_address.to_bits() + 1),
+            None => self.first_address(),
         }
     }
 
     fn last_usable(&self) -> Ipv4Addr {
-        let broadcast_address = self.broadcast_address();
-        if self.prefix >= POINT_TO_POINT_CIDR_PREFIX_LEN {
-            broadcast_address
-        } else {
-            Ipv4Addr::from_bits(broadcast_address.to_bits() - 1)
+        match self.broadcast_address() {
+            Some(broadcat_address) => Ipv4Addr::from_bits(broadcat_address.to_bits() - 1),
+            None => self.last_address(),
         }
-    }
-
-    fn network_address(&self) -> Ipv4Addr {
-        IpNetwork::network_address(self)
     }
 }
 
@@ -371,7 +384,7 @@ mod test {
         };
 
         // Act
-        let actual_network_address = Ipv4Network::network_address(&expected_cidr);
+        let actual_network_address = Ipv4Network::network_address(&expected_cidr).unwrap();
 
         // Assert
         assert_eq!(actual_network_address, expected_network_address);
@@ -389,7 +402,7 @@ mod test {
         };
 
         // Act
-        let actual_broadcast_address = expected_cidr.broadcast_address();
+        let actual_broadcast_address = expected_cidr.broadcast_address().unwrap();
 
         // Assert
         assert_eq!(actual_broadcast_address, expected_broadcast_address);
@@ -407,7 +420,7 @@ mod test {
         };
 
         // Act
-        let actual_broadcast_address = expected_cidr.broadcast_address();
+        let actual_broadcast_address = expected_cidr.broadcast_address().unwrap();
 
         // Assert
         assert_eq!(actual_broadcast_address, expected_broadcast_address);
@@ -418,7 +431,6 @@ mod test {
         // Arrange
         let expected_prefix: u8 = 32;
         let expected_binary_address: u32 = 0b00001010_01011000_10000111_10010000;
-        let expected_broadcast_address = Ipv4Addr::from_bits(0b00001010_01011000_10000111_10010000);
         let expected_cidr = Ipv4Cidr {
             ip: Ipv4Addr::from_bits(expected_binary_address),
             prefix: expected_prefix,
@@ -428,7 +440,7 @@ mod test {
         let actual_broadcast_address = expected_cidr.broadcast_address();
 
         // Assert
-        assert_eq!(actual_broadcast_address, expected_broadcast_address);
+        assert_eq!(actual_broadcast_address, None);
     }
 
     #[test]

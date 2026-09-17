@@ -20,7 +20,7 @@ pub mod ipv4;
 pub mod ipv6;
 
 #[derive(Debug, Error)]
-pub enum RangeError {
+pub enum RangeParseError {
     #[error("One or both provided IPs are invalid: {0}")]
     IpParse(AddrParseError),
     #[error("Invalid range format. Supported formats: ip..ip, ip-ip, \"ip ip\"")]
@@ -31,7 +31,7 @@ pub enum RangeError {
 
 pub trait AddressRange {
     type Addr: Debug + Display + PartialEq + PartialOrd;
-    type Net;
+    type Net: IpNetwork;
 
     fn start(&self) -> Self::Addr;
     fn end(&self) -> Self::Addr;
@@ -45,9 +45,9 @@ pub enum IpRange {
 }
 
 impl IpRange {
-    fn parse_ranges(start: &str, end: &str) -> Result<Self, RangeError> {
-        let start = start.parse::<IpAddr>().map_err(RangeError::IpParse)?;
-        let end = end.parse::<IpAddr>().map_err(RangeError::IpParse)?;
+    fn parse_ranges(start: &str, end: &str) -> Result<Self, RangeParseError> {
+        let start = start.parse::<IpAddr>().map_err(RangeParseError::IpParse)?;
+        let end = end.parse::<IpAddr>().map_err(RangeParseError::IpParse)?;
         match (start, end) {
             (IpAddr::V4(ipv4_start), IpAddr::V4(ipv4_end)) => {
                 Ok(IpRange::V4(Ipv4Range::new(ipv4_start, ipv4_end)))
@@ -55,13 +55,13 @@ impl IpRange {
             (IpAddr::V6(ipv6_start), IpAddr::V6(ipv6_end)) => {
                 Ok(IpRange::V6(Ipv6Range::new(ipv6_start, ipv6_end)))
             }
-            _ => Err(RangeError::Inconsistent),
+            _ => Err(RangeParseError::Inconsistent),
         }
     }
 }
 
 impl FromStr for IpRange {
-    type Err = RangeError;
+    type Err = RangeParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if let Some((start, end)) = s.split_once("..") {
@@ -71,7 +71,7 @@ impl FromStr for IpRange {
         } else if let Some((start, end)) = s.split_once(' ') {
             Self::parse_ranges(start, end)
         } else {
-            Err(RangeError::Format)
+            Err(RangeParseError::Format)
         }
     }
 }
@@ -102,7 +102,7 @@ where
         let mut guess_cidr = make_cidr(start_addr, prefix);
         let mut next_guess_cidr = guess_cidr;
 
-        while next_guess_cidr.network_address() == start_addr
+        while next_guess_cidr.first_address() == start_addr
             && next_guess_cidr.last_address() <= end_addr
         {
             guess_cidr = next_guess_cidr;
@@ -295,7 +295,7 @@ mod tests {
         let actual_result = expected_invalid_string.parse::<IpRange>();
 
         // Assert
-        assert!(matches!(actual_result, Err(RangeError::Format)));
+        assert!(matches!(actual_result, Err(RangeParseError::Format)));
     }
 
     #[test]
@@ -307,7 +307,7 @@ mod tests {
         let actual_result = expected_invalid_string.parse::<IpRange>();
 
         // Assert
-        assert!(matches!(actual_result, Err(RangeError::Inconsistent)));
+        assert!(matches!(actual_result, Err(RangeParseError::Inconsistent)));
     }
 
     #[test]
@@ -319,7 +319,7 @@ mod tests {
         let actual_result = expected_invalid_string.parse::<IpRange>();
 
         // Assert
-        assert!(matches!(actual_result, Err(RangeError::Inconsistent)));
+        assert!(matches!(actual_result, Err(RangeParseError::Inconsistent)));
     }
 
     #[test]
@@ -331,7 +331,7 @@ mod tests {
         let actual_result = expected_invalid_string.parse::<IpRange>();
 
         // Assert
-        assert!(matches!(actual_result, Err(RangeError::IpParse(_))));
+        assert!(matches!(actual_result, Err(RangeParseError::IpParse(_))));
     }
 
     #[test]
@@ -343,7 +343,7 @@ mod tests {
         let actual_result = expected_invalid_string.parse::<IpRange>();
 
         // Assert
-        assert!(matches!(actual_result, Err(RangeError::IpParse(_))));
+        assert!(matches!(actual_result, Err(RangeParseError::IpParse(_))));
     }
 
     #[test]
@@ -355,7 +355,7 @@ mod tests {
         let actual_result = expected_invalid_string.parse::<IpRange>();
 
         // Assert
-        assert!(matches!(actual_result, Err(RangeError::IpParse(_))));
+        assert!(matches!(actual_result, Err(RangeParseError::IpParse(_))));
     }
 
     #[test]

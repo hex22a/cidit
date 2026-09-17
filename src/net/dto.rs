@@ -1,7 +1,7 @@
 use serde::Serialize;
 use tabled::Tabled;
 
-use crate::{Cidr, IpNetwork, Ipv4Network, Ipv6Network, POINT_TO_POINT_CIDR_PREFIX_LEN};
+use crate::{Cidr, IpNetwork, Ipv4Network, Ipv6Network};
 
 #[derive(Debug, Tabled, Default, PartialEq)]
 pub struct CidrCombinedInfo {
@@ -51,29 +51,23 @@ pub enum CidrInfo {
 impl From<Cidr> for CidrCombinedInfo {
     fn from(value: Cidr) -> Self {
         match value {
-            Cidr::V4(v4) => {
-                let network = if v4.prefix_len() >= POINT_TO_POINT_CIDR_PREFIX_LEN {
-                    String::from("")
-                } else {
-                    Ipv4Network::network_address(&v4).to_string()
-                };
-                let broadcast = if v4.prefix_len() >= POINT_TO_POINT_CIDR_PREFIX_LEN {
-                    String::from("")
-                } else {
-                    v4.broadcast_address().to_string()
-                };
-                CidrCombinedInfo {
-                    ip_ver: "v4",
-                    cidr: format!("{}/{}", v4.addr(), v4.prefix_len()),
-                    address: v4.addr().to_string(),
-                    prefix: v4.prefix_len(),
-                    first_usable: v4.first_usable().to_string(),
-                    last_usable: v4.last_usable().to_string(),
-                    network,
-                    broadcast,
-                    ..Default::default()
-                }
-            }
+            Cidr::V4(v4) => CidrCombinedInfo {
+                ip_ver: "v4",
+                cidr: format!("{}/{}", v4.addr(), v4.prefix_len()),
+                address: v4.addr().to_string(),
+                prefix: v4.prefix_len(),
+                first_usable: v4.first_usable().to_string(),
+                last_usable: v4.last_usable().to_string(),
+                network: v4
+                    .network_address()
+                    .map(|n| n.to_string())
+                    .unwrap_or_default(),
+                broadcast: v4
+                    .broadcast_address()
+                    .map(|b| b.to_string())
+                    .unwrap_or_default(),
+                ..Default::default()
+            },
             Cidr::V6(v6) => CidrCombinedInfo {
                 ip_ver: "v6",
                 cidr: format!("{}/{}", v6.addr(), v6.prefix_len()),
@@ -81,7 +75,7 @@ impl From<Cidr> for CidrCombinedInfo {
                 prefix: v6.prefix_len(),
                 netmask: v6.netmask().to_string(),
                 hostmask: v6.hostmask().to_string(),
-                network: v6.network_address().to_string(),
+                network: v6.first_address().to_string(),
                 available: v6.subnet_size(),
                 ..Default::default()
             },
@@ -92,34 +86,28 @@ impl From<Cidr> for CidrCombinedInfo {
 impl From<Cidr> for CidrInfo {
     fn from(value: Cidr) -> Self {
         match value {
-            Cidr::V4(v4) => {
-                let network = if v4.prefix_len() >= POINT_TO_POINT_CIDR_PREFIX_LEN {
-                    String::from("")
-                } else {
-                    Ipv4Network::network_address(&v4).to_string()
-                };
-                let broadcast = if v4.prefix_len() >= POINT_TO_POINT_CIDR_PREFIX_LEN {
-                    String::from("")
-                } else {
-                    v4.broadcast_address().to_string()
-                };
-                CidrInfo::V4(Ipv4CidrInfo {
-                    cidr: format!("{}/{}", v4.addr(), v4.prefix_len()),
-                    address: v4.addr().to_string(),
-                    prefix_length: v4.prefix_len(),
-                    first_usable: v4.first_usable().to_string(),
-                    last_usable: v4.last_usable().to_string(),
-                    network,
-                    broadcast,
-                })
-            }
+            Cidr::V4(v4) => CidrInfo::V4(Ipv4CidrInfo {
+                cidr: format!("{}/{}", v4.addr(), v4.prefix_len()),
+                address: v4.addr().to_string(),
+                prefix_length: v4.prefix_len(),
+                first_usable: v4.first_usable().to_string(),
+                last_usable: v4.last_usable().to_string(),
+                network: v4
+                    .network_address()
+                    .map(|n| n.to_string())
+                    .unwrap_or_default(),
+                broadcast: v4
+                    .broadcast_address()
+                    .map(|b| b.to_string())
+                    .unwrap_or_default(),
+            }),
             Cidr::V6(v6) => CidrInfo::V6(Ipv6CidrInfo {
                 cidr: format!("{}/{}", v6.addr(), v6.prefix_len()),
                 address: v6.addr().to_string(),
                 prefix_length: v6.prefix_len(),
                 netmask: v6.netmask().to_string(),
                 hostmask: v6.hostmask().to_string(),
-                network: v6.network_address().to_string(),
+                network: v6.first_address().to_string(),
                 subnet_size: v6.subnet_size(),
             }),
         }

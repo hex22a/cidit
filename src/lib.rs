@@ -19,7 +19,6 @@ pub use net::dto::Ipv6CidrInfo;
 pub use net::ipv4::Ipv4Cidr;
 pub use net::ipv4::Ipv4CidrError;
 pub use net::ipv4::Ipv4Network;
-pub use net::ipv4::POINT_TO_POINT_CIDR_PREFIX_LEN;
 pub use net::ipv6::Ipv6Cidr;
 pub use net::ipv6::Ipv6CidrError;
 pub use net::ipv6::Ipv6Network;

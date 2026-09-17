@@ -8,6 +8,7 @@ use thiserror::Error;
 use crate::net::IpNetwork;
 
 const MAX_IPV6_CIDR_PREFIX_LEN: u8 = 128;
+const POINT_TO_POINT_CIDR_PREFIX_LEN: u8 = 127;
 const MIN_REASONABLE_PREFIX_LEN: u8 = 96;
 
 #[derive(Debug, Error, PartialEq)]
@@ -54,7 +55,15 @@ impl FromStr for Ipv6Cidr {
 
 /// IPv6 Network
 pub trait Ipv6Network: IpNetwork {
+    /// Number of available IPs in a range
     fn subnet_size(&self) -> String;
+
+    /// Gets network address for IPv6.
+    /// Returns None for network masks
+    /// /127 for point-to-point connections
+    /// ([RFC 6164](https://datatracker.ietf.org/doc/html/rfc6164))
+    /// and /128 for single host
+    fn network_address(&self) -> Option<Ipv6Addr>;
 }
 
 impl Ipv6Network for Ipv6Cidr {
@@ -67,10 +76,19 @@ impl Ipv6Network for Ipv6Cidr {
             format!("{}", 1u128 << power)
         }
     }
+
+    fn network_address(&self) -> Option<Ipv6Addr> {
+        if self.prefix < POINT_TO_POINT_CIDR_PREFIX_LEN {
+            Some(self.first_address())
+        } else {
+            None
+        }
+    }
 }
 
 impl IpNetwork for Ipv6Cidr {
     type Addr = Ipv6Addr;
+    type Bits = u128;
 
     fn addr(&self) -> Ipv6Addr {
         self.ip
@@ -80,30 +98,36 @@ impl IpNetwork for Ipv6Cidr {
         self.prefix
     }
 
-    fn netmask(&self) -> Ipv6Addr {
-        let mask = if self.prefix == 0 {
+    fn netmask_bits(&self) -> Self::Bits {
+        if self.prefix == 0 {
             0
         } else {
             !0u128 << (MAX_IPV6_CIDR_PREFIX_LEN - self.prefix)
-        };
-        Ipv6Addr::from_bits(mask)
+        }
     }
 
-    fn network_address(&self) -> Ipv6Addr {
-        Ipv6Addr::from_bits(self.ip.to_bits() & self.netmask().to_bits())
+    fn netmask(&self) -> Ipv6Addr {
+        Ipv6Addr::from_bits(self.netmask_bits())
     }
 
-    fn last_address(&self) -> Ipv6Addr {
-        Ipv6Addr::from_bits(self.network_address().to_bits() | self.hostmask().to_bits())
-    }
-
-    fn hostmask(&self) -> Ipv6Addr {
-        let mask = if self.prefix == MAX_IPV6_CIDR_PREFIX_LEN {
+    fn hostmask_bits(&self) -> Self::Bits {
+        if self.prefix == MAX_IPV6_CIDR_PREFIX_LEN {
             0
         } else {
             !0u128 >> self.prefix
-        };
-        Ipv6Addr::from_bits(mask)
+        }
+    }
+
+    fn hostmask(&self) -> Ipv6Addr {
+        Ipv6Addr::from_bits(self.hostmask_bits())
+    }
+
+    fn first_address(&self) -> Ipv6Addr {
+        Ipv6Addr::from_bits(self.ip.to_bits() & self.netmask_bits())
+    }
+
+    fn last_address(&self) -> Ipv6Addr {
+        Ipv6Addr::from_bits(self.first_address().to_bits() | self.hostmask_bits())
     }
 }
 
@@ -356,7 +380,7 @@ mod test {
         .unwrap();
 
         // Act
-        let actual_network_address = expected_ipv6_cidr.network_address();
+        let actual_network_address = expected_ipv6_cidr.first_address();
 
         // Assert
         assert_eq!(actual_network_address, expected_network_address);
