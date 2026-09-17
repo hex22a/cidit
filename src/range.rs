@@ -29,19 +29,30 @@ pub enum RangeParseError {
     Inconsistent,
 }
 
+pub enum RangeMode {
+    ExactFit,
+    SmallestCommon,
+}
+
 pub trait AddressRange {
     type Addr: Debug + Display + PartialEq + PartialOrd;
     type Net: IpNetwork;
 
     fn start(&self) -> Self::Addr;
     fn end(&self) -> Self::Addr;
-    fn smallest_common_cidr(&self) -> Self::Net;
-    fn exact_fit(&self) -> Vec<Self::Net>;
+    fn cidrs(&self) -> Option<&[Self::Net]>;
+    fn find_cidr(&mut self, mode: RangeMode) -> &mut Self;
 }
 
 pub enum IpRange {
-    V4(Ipv4Range),
-    V6(Ipv6Range),
+    V4 {
+        range: Ipv4Range,
+        cidrs: Option<Vec<Cidr>>,
+    },
+    V6 {
+        range: Ipv6Range,
+        cidrs: Option<Vec<Cidr>>,
+    },
 }
 
 impl IpRange {
@@ -49,12 +60,14 @@ impl IpRange {
         let start = start.parse::<IpAddr>().map_err(RangeParseError::IpParse)?;
         let end = end.parse::<IpAddr>().map_err(RangeParseError::IpParse)?;
         match (start, end) {
-            (IpAddr::V4(ipv4_start), IpAddr::V4(ipv4_end)) => {
-                Ok(IpRange::V4(Ipv4Range::new(ipv4_start, ipv4_end)))
-            }
-            (IpAddr::V6(ipv6_start), IpAddr::V6(ipv6_end)) => {
-                Ok(IpRange::V6(Ipv6Range::new(ipv6_start, ipv6_end)))
-            }
+            (IpAddr::V4(ipv4_start), IpAddr::V4(ipv4_end)) => Ok(IpRange::V4 {
+                range: Ipv4Range::new(ipv4_start, ipv4_end),
+                cidrs: None,
+            }),
+            (IpAddr::V6(ipv6_start), IpAddr::V6(ipv6_end)) => Ok(IpRange::V6 {
+                range: Ipv6Range::new(ipv6_start, ipv6_end),
+                cidrs: None,
+            }),
             _ => Err(RangeParseError::Inconsistent),
         }
     }
@@ -136,30 +149,41 @@ impl AddressRange for IpRange {
 
     fn start(&self) -> IpAddr {
         match self {
-            IpRange::V4(v4) => IpAddr::V4(v4.start()),
-            IpRange::V6(v6) => IpAddr::V6(v6.start()),
+            IpRange::V4 { range, .. } => IpAddr::V4(range.start()),
+            IpRange::V6 { range, .. } => IpAddr::V6(range.start()),
         }
     }
 
     fn end(&self) -> IpAddr {
         match self {
-            IpRange::V4(v4) => IpAddr::V4(v4.end()),
-            IpRange::V6(v6) => IpAddr::V6(v6.end()),
+            IpRange::V4 { range, .. } => IpAddr::V4(range.end()),
+            IpRange::V6 { range, .. } => IpAddr::V6(range.end()),
         }
     }
 
-    fn smallest_common_cidr(&self) -> Cidr {
+    fn cidrs(&self) -> Option<&[Self::Net]> {
         match self {
-            IpRange::V4(ipv4_range) => Cidr::V4(ipv4_range.smallest_common_cidr()),
-            IpRange::V6(ipv6_range) => Cidr::V6(ipv6_range.smallest_common_cidr()),
+            IpRange::V4 { cidrs, .. } => cidrs.as_deref(),
+            IpRange::V6 { cidrs, .. } => cidrs.as_deref(),
         }
     }
 
-    fn exact_fit(&self) -> Vec<Cidr> {
+    fn find_cidr(&mut self, mode: RangeMode) -> &mut Self {
         match self {
-            IpRange::V4(ipv4_range) => ipv4_range.exact_fit().into_iter().map(Cidr::V4).collect(),
-            IpRange::V6(ipv6_range) => ipv6_range.exact_fit().into_iter().map(Cidr::V6).collect(),
+            IpRange::V4 { range, cidrs } => {
+                range.find_cidr(mode);
+                *cidrs = range
+                    .cidrs()
+                    .map(|cidrs| cidrs.iter().copied().map(Cidr::V4).collect());
+            }
+            IpRange::V6 { range, cidrs } => {
+                range.find_cidr(mode);
+                *cidrs = range
+                    .cidrs()
+                    .map(|cidrs| cidrs.iter().copied().map(Cidr::V6).collect());
+            }
         }
+        self
     }
 }
 
@@ -183,7 +207,7 @@ mod tests {
 
         // Assert
         match actual_range {
-            IpRange::V4(range) => {
+            IpRange::V4 { range, .. } => {
                 assert_eq!(range.start().to_string(), EXPECTED_IPV4_START_STR);
                 assert_eq!(range.end().to_string(), EXPECTED_IPV4_END_STR);
             }
@@ -202,7 +226,7 @@ mod tests {
 
         // Assert
         match actual_range {
-            IpRange::V4(range) => {
+            IpRange::V4 { range, .. } => {
                 assert_eq!(range.start().to_string(), EXPECTED_IPV4_START_STR);
                 assert_eq!(range.end().to_string(), EXPECTED_IPV4_END_STR);
             }
@@ -221,7 +245,7 @@ mod tests {
 
         // Assert
         match actual_range {
-            IpRange::V4(range) => {
+            IpRange::V4 { range, .. } => {
                 assert_eq!(range.start().to_string(), EXPECTED_IPV4_START_STR);
                 assert_eq!(range.end().to_string(), EXPECTED_IPV4_END_STR);
             }
@@ -240,7 +264,7 @@ mod tests {
 
         // Assert
         match actual_range {
-            IpRange::V6(range) => {
+            IpRange::V6 { range, .. } => {
                 assert_eq!(range.start().to_string(), EXPECTED_IPV6_START_STR);
                 assert_eq!(range.end().to_string(), EXPECTED_IPV6_END_STR);
             }
@@ -259,7 +283,7 @@ mod tests {
 
         // Assert
         match actual_range {
-            IpRange::V6(range) => {
+            IpRange::V6 { range, .. } => {
                 assert_eq!(range.start().to_string(), EXPECTED_IPV6_START_STR);
                 assert_eq!(range.end().to_string(), EXPECTED_IPV6_END_STR);
             }
@@ -278,7 +302,7 @@ mod tests {
 
         // Assert
         match actual_range {
-            IpRange::V6(range) => {
+            IpRange::V6 { range, .. } => {
                 assert_eq!(range.start().to_string(), EXPECTED_IPV6_START_STR);
                 assert_eq!(range.end().to_string(), EXPECTED_IPV6_END_STR);
             }
@@ -363,7 +387,10 @@ mod tests {
         // Arrange
         let expected_start = String::from("10.0.0.10").parse().unwrap();
         let expected_end = String::from("10.0.0.20").parse().unwrap();
-        let range = IpRange::V4(Ipv4Range::new(expected_start, expected_end));
+        let range = IpRange::V4 {
+            range: Ipv4Range::new(expected_start, expected_end),
+            cidrs: None,
+        };
 
         // Act
         let actual_start = range.start();
@@ -377,7 +404,10 @@ mod tests {
         // Arrange
         let expected_start = String::from("10.0.0.10").parse().unwrap();
         let expected_end = String::from("10.0.0.20").parse().unwrap();
-        let range = IpRange::V4(Ipv4Range::new(expected_start, expected_end));
+        let range = IpRange::V4 {
+            range: Ipv4Range::new(expected_start, expected_end),
+            cidrs: None,
+        };
 
         // Act
         let actual_end = range.end();
@@ -391,7 +421,10 @@ mod tests {
         // Arrange
         let expected_start = String::from("2001:db8::10").parse().unwrap();
         let expected_end = String::from("2001:db8::20").parse().unwrap();
-        let range = IpRange::V6(Ipv6Range::new(expected_start, expected_end));
+        let range = IpRange::V6 {
+            range: Ipv6Range::new(expected_start, expected_end),
+            cidrs: None,
+        };
 
         // Act
         let actual_start = range.start();
@@ -405,7 +438,10 @@ mod tests {
         // Arrange
         let expected_start = String::from("2001:db8::10").parse().unwrap();
         let expected_end = String::from("2001:db8::20").parse().unwrap();
-        let range = IpRange::V6(Ipv6Range::new(expected_start, expected_end));
+        let range = IpRange::V6 {
+            range: Ipv6Range::new(expected_start, expected_end),
+            cidrs: None,
+        };
 
         // Act
         let actual_end = range.end();
@@ -415,87 +451,132 @@ mod tests {
     }
 
     #[test]
-    fn test_smallest_common_cidr_v4() {
+    fn test_find_smallest_common_cidr_v4() {
         // Arrange
         let expected_start = String::from("10.0.0.10").parse().unwrap();
         let expected_end = String::from("10.0.0.20").parse().unwrap();
         let expected_ipv4_cidr = String::from("10.0.0.0/27").parse().unwrap();
         let expected_common_cidr = Cidr::V4(expected_ipv4_cidr);
-        let range = IpRange::V4(Ipv4Range::new(expected_start, expected_end));
+        let expected_cidrs = Some(vec![expected_common_cidr]);
+        let mut range = IpRange::V4 {
+            range: Ipv4Range::new(expected_start, expected_end),
+            cidrs: None,
+        };
 
         // Act
-        let actual_common_cidr = range.smallest_common_cidr();
+        let actual_updated_range = range.find_cidr(RangeMode::SmallestCommon);
 
         // Assert
-        assert_eq!(actual_common_cidr, expected_common_cidr);
+        match actual_updated_range {
+            IpRange::V4 { cidrs, .. } => {
+                assert_eq!(cidrs, &expected_cidrs);
+            }
+            _ => panic!("Expected IpRange::V4"),
+        }
     }
 
     #[test]
-    fn test_smallest_common_cidr_v4_reverse_order() {
+    fn test_find_smallest_common_cidr_v4_reverse_order() {
         // Arrange
         let expected_start = String::from("10.0.0.20").parse().unwrap();
         let expected_end = String::from("10.0.0.10").parse().unwrap();
         let expected_ipv4_cidr = String::from("10.0.0.0/27").parse().unwrap();
         let expected_common_cidr = Cidr::V4(expected_ipv4_cidr);
-        let range = IpRange::V4(Ipv4Range::new(expected_start, expected_end));
+        let expected_cidrs = Some(vec![expected_common_cidr]);
+        let mut range = IpRange::V4 {
+            range: Ipv4Range::new(expected_start, expected_end),
+            cidrs: None,
+        };
 
         // Act
-        let actual_common_cidr = range.smallest_common_cidr();
+        let actual_updated_range = range.find_cidr(RangeMode::SmallestCommon);
 
         // Assert
-        assert_eq!(actual_common_cidr, expected_common_cidr);
+        match actual_updated_range {
+            IpRange::V4 { cidrs, .. } => {
+                assert_eq!(cidrs, &expected_cidrs);
+            }
+            _ => panic!("Expected IpRange::V4"),
+        }
     }
 
     #[test]
-    fn test_smallest_common_cidr_v4_one_ip() {
+    fn test_find_smallest_common_cidr_v4_one_ip() {
         // Arrange
         let expected_start = String::from("10.0.0.10").parse().unwrap();
         let expected_end = String::from("10.0.0.10").parse().unwrap();
         let expected_ipv4_cidr = String::from("10.0.0.10/32").parse().unwrap();
         let expected_common_cidr = Cidr::V4(expected_ipv4_cidr);
-        let range = IpRange::V4(Ipv4Range::new(expected_start, expected_end));
+        let expected_cidrs = Some(vec![expected_common_cidr]);
+        let mut range = IpRange::V4 {
+            range: Ipv4Range::new(expected_start, expected_end),
+            cidrs: None,
+        };
 
         // Act
-        let actual_common_cidr = range.smallest_common_cidr();
+        let actual_updated_range = range.find_cidr(RangeMode::SmallestCommon);
 
         // Assert
-        assert_eq!(actual_common_cidr, expected_common_cidr);
+        match actual_updated_range {
+            IpRange::V4 { cidrs, .. } => {
+                assert_eq!(cidrs, &expected_cidrs);
+            }
+            _ => panic!("Expected IpRange::V4"),
+        }
     }
 
     #[test]
-    fn test_smallest_common_cidr_v6() {
+    fn test_find_smallest_common_cidr_v6() {
         // Arrange
         let expected_start = String::from("2001:db8::10").parse().unwrap();
         let expected_end = String::from("2001:db8::20").parse().unwrap();
         let expected_ipv6_cidr = String::from("2001:db8::/122").parse().unwrap();
         let expected_common_cidr = Cidr::V6(expected_ipv6_cidr);
-        let range = IpRange::V6(Ipv6Range::new(expected_start, expected_end));
+        let expected_cidrs = Some(vec![expected_common_cidr]);
+        let mut range = IpRange::V6 {
+            range: Ipv6Range::new(expected_start, expected_end),
+            cidrs: None,
+        };
 
         // Act
-        let actual_common_cidr = range.smallest_common_cidr();
+        let actual_updated_range = range.find_cidr(RangeMode::SmallestCommon);
 
         // Assert
-        assert_eq!(actual_common_cidr, expected_common_cidr);
+        match actual_updated_range {
+            IpRange::V6 { cidrs, .. } => {
+                assert_eq!(cidrs, &expected_cidrs);
+            }
+            _ => panic!("Expected IpRange::V6"),
+        }
     }
 
     #[test]
-    fn test_smallest_common_cidr_v6_one_ip() {
+    fn test_find_smallest_common_cidr_v6_one_ip() {
         // Arrange
         let expected_start = String::from("2001:db8::10").parse().unwrap();
         let expected_end = String::from("2001:db8::10").parse().unwrap();
         let expected_ipv6_cidr = String::from("2001:db8::10/128").parse().unwrap();
         let expected_common_cidr = Cidr::V6(expected_ipv6_cidr);
-        let range = IpRange::V6(Ipv6Range::new(expected_start, expected_end));
+        let expected_cidrs = Some(vec![expected_common_cidr]);
+        let mut range = IpRange::V6 {
+            range: Ipv6Range::new(expected_start, expected_end),
+            cidrs: None,
+        };
 
         // Act
-        let actual_common_cidr = range.smallest_common_cidr();
+        let actual_updated_range = range.find_cidr(RangeMode::SmallestCommon);
 
         // Assert
-        assert_eq!(actual_common_cidr, expected_common_cidr);
+        match actual_updated_range {
+            IpRange::V6 { cidrs, .. } => {
+                assert_eq!(cidrs, &expected_cidrs);
+            }
+            _ => panic!("Expected IpRange::V6"),
+        }
     }
 
     #[test]
-    fn test_exact_fit_v4() {
+    fn test_find_exact_fit_v4() {
         // Arrange
         let expected_start = String::from("10.0.0.10").parse().unwrap();
         let expected_end = String::from("10.0.0.20").parse().unwrap();
@@ -503,23 +584,31 @@ mod tests {
         let expected_ipv4_cidr2 = String::from("10.0.0.12/30").parse().unwrap();
         let expected_ipv4_cidr3 = String::from("10.0.0.16/30").parse().unwrap();
         let expected_ipv4_cidr4 = String::from("10.0.0.20/32").parse().unwrap();
-        let expected_cidrs = vec![
+        let expected_cidrs = Some(vec![
             Cidr::V4(expected_ipv4_cidr1),
             Cidr::V4(expected_ipv4_cidr2),
             Cidr::V4(expected_ipv4_cidr3),
             Cidr::V4(expected_ipv4_cidr4),
-        ];
-        let range = IpRange::V4(Ipv4Range::new(expected_start, expected_end));
+        ]);
+        let mut range = IpRange::V4 {
+            range: Ipv4Range::new(expected_start, expected_end),
+            cidrs: None,
+        };
 
         // Act
-        let actual_cidrs = range.exact_fit();
+        let actual_updated_range = range.find_cidr(RangeMode::ExactFit);
 
         // Assert
-        assert_eq!(actual_cidrs, expected_cidrs);
+        match actual_updated_range {
+            IpRange::V4 { cidrs, .. } => {
+                assert_eq!(cidrs, &expected_cidrs);
+            }
+            _ => panic!("Expected IpRange::V4"),
+        }
     }
 
     #[test]
-    fn test_exact_fit_v4_unaligned_start() {
+    fn test_find_exact_fit_v4_unaligned_start() {
         // Arrange
         let expected_start = String::from("10.0.0.5").parse().unwrap();
         let expected_end = String::from("10.0.0.10").parse().unwrap();
@@ -527,137 +616,207 @@ mod tests {
         let expected_ipv4_cidr2 = String::from("10.0.0.6/31").parse().unwrap();
         let expected_ipv4_cidr3 = String::from("10.0.0.8/31").parse().unwrap();
         let expected_ipv4_cidr4 = String::from("10.0.0.10/32").parse().unwrap();
-        let expected_cidrs = vec![
+        let expected_cidrs = Some(vec![
             Cidr::V4(expected_ipv4_cidr1),
             Cidr::V4(expected_ipv4_cidr2),
             Cidr::V4(expected_ipv4_cidr3),
             Cidr::V4(expected_ipv4_cidr4),
-        ];
-        let range = IpRange::V4(Ipv4Range::new(expected_start, expected_end));
+        ]);
+        let mut range = IpRange::V4 {
+            range: Ipv4Range::new(expected_start, expected_end),
+            cidrs: None,
+        };
 
         // Act
-        let actual_cidrs = range.exact_fit();
+        let actual_updated_range = range.find_cidr(RangeMode::ExactFit);
 
         // Assert
-        assert_eq!(actual_cidrs, expected_cidrs);
+        match actual_updated_range {
+            IpRange::V4 { cidrs, .. } => {
+                assert_eq!(cidrs, &expected_cidrs);
+            }
+            _ => panic!("Expected IpRange::V4"),
+        }
     }
 
     #[test]
-    fn test_exact_fit_v4_single_address() {
+    fn test_find_exact_fit_v4_single_address() {
         // Arrange
         let expected_start = String::from("10.0.0.10").parse().unwrap();
         let expected_end = String::from("10.0.0.10").parse().unwrap();
         let expected_ipv4_cidr1 = String::from("10.0.0.10/32").parse().unwrap();
-        let expected_cidrs = vec![Cidr::V4(expected_ipv4_cidr1)];
-        let range = IpRange::V4(Ipv4Range::new(expected_start, expected_end));
+        let expected_cidrs = Some(vec![Cidr::V4(expected_ipv4_cidr1)]);
+        let mut range = IpRange::V4 {
+            range: Ipv4Range::new(expected_start, expected_end),
+            cidrs: None,
+        };
 
         // Act
-        let actual_cidrs = range.exact_fit();
+        let actual_updated_range = range.find_cidr(RangeMode::ExactFit);
 
         // Assert
-        assert_eq!(actual_cidrs, expected_cidrs);
+        match actual_updated_range {
+            IpRange::V4 { cidrs, .. } => {
+                assert_eq!(cidrs, &expected_cidrs);
+            }
+            _ => panic!("Expected IpRange::V4"),
+        }
     }
 
     #[test]
-    fn test_exact_fit_v4_single_octet() {
+    fn test_find_exact_fit_v4_single_octet() {
         // Arrange
         let expected_start = String::from("10.0.0.0").parse().unwrap();
         let expected_end = String::from("10.0.0.255").parse().unwrap();
         let expected_ipv4_cidr1 = String::from("10.0.0.0/24").parse().unwrap();
-        let expected_cidrs = vec![Cidr::V4(expected_ipv4_cidr1)];
-        let range = IpRange::V4(Ipv4Range::new(expected_start, expected_end));
+        let expected_cidrs = Some(vec![Cidr::V4(expected_ipv4_cidr1)]);
+        let mut range = IpRange::V4 {
+            range: Ipv4Range::new(expected_start, expected_end),
+            cidrs: None,
+        };
 
         // Act
-        let actual_cidrs = range.exact_fit();
+        let actual_updated_range = range.find_cidr(RangeMode::ExactFit);
 
         // Assert
-        assert_eq!(actual_cidrs, expected_cidrs);
+        match actual_updated_range {
+            IpRange::V4 { cidrs, .. } => {
+                assert_eq!(cidrs, &expected_cidrs);
+            }
+            _ => panic!("Expected IpRange::V4"),
+        }
     }
 
     #[test]
-    fn test_exact_fit_v4_entire_network() {
+    fn test_find_exact_fit_v4_entire_network() {
         // Arrange
         let expected_start = String::from("0.0.0.0").parse().unwrap();
         let expected_end = String::from("255.255.255.255").parse().unwrap();
         let expected_ipv4_cidr1 = String::from("0.0.0.0/0").parse().unwrap();
-        let expected_cidrs = vec![Cidr::V4(expected_ipv4_cidr1)];
-        let range = IpRange::V4(Ipv4Range::new(expected_start, expected_end));
+        let expected_cidrs = Some(vec![Cidr::V4(expected_ipv4_cidr1)]);
+        let mut range = IpRange::V4 {
+            range: Ipv4Range::new(expected_start, expected_end),
+            cidrs: None,
+        };
 
         // Act
-        let actual_cidrs = range.exact_fit();
+        let actual_updated_range = range.find_cidr(RangeMode::ExactFit);
 
         // Assert
-        assert_eq!(actual_cidrs, expected_cidrs);
+        match actual_updated_range {
+            IpRange::V4 { cidrs, .. } => {
+                assert_eq!(cidrs, &expected_cidrs);
+            }
+            _ => panic!("Expected IpRange::V4"),
+        }
     }
 
     #[test]
-    fn test_exact_fit_v4_aligned_block() {
+    fn test_find_exact_fit_v4_aligned_block() {
         // Arrange
         let expected_start = String::from("10.0.0.16").parse().unwrap();
         let expected_end = String::from("10.0.0.31").parse().unwrap();
         let expected_ipv4_cidr1 = String::from("10.0.0.16/28").parse().unwrap();
-        let expected_cidrs = vec![Cidr::V4(expected_ipv4_cidr1)];
-        let range = IpRange::V4(Ipv4Range::new(expected_start, expected_end));
+        let expected_cidrs = Some(vec![Cidr::V4(expected_ipv4_cidr1)]);
+        let mut range = IpRange::V4 {
+            range: Ipv4Range::new(expected_start, expected_end),
+            cidrs: None,
+        };
 
         // Act
-        let actual_cidrs = range.exact_fit();
+        let actual_updated_range = range.find_cidr(RangeMode::ExactFit);
 
         // Assert
-        assert_eq!(actual_cidrs, expected_cidrs);
+        match actual_updated_range {
+            IpRange::V4 { cidrs, .. } => {
+                assert_eq!(cidrs, &expected_cidrs);
+            }
+            _ => panic!("Expected IpRange::V4"),
+        }
     }
 
     #[test]
-    fn test_exact_fit_v4_grows_block() {
+    fn test_find_exact_fit_v4_grows_block() {
         // Arrange
         let expected_start = String::from("10.0.0.8").parse().unwrap();
         let expected_end = String::from("10.0.0.11").parse().unwrap();
         let expected_ipv4_cidr1 = String::from("10.0.0.8/30").parse().unwrap();
-        let expected_cidrs = vec![Cidr::V4(expected_ipv4_cidr1)];
-        let range = IpRange::V4(Ipv4Range::new(expected_start, expected_end));
+        let expected_cidrs = Some(vec![Cidr::V4(expected_ipv4_cidr1)]);
+        let mut range = IpRange::V4 {
+            range: Ipv4Range::new(expected_start, expected_end),
+            cidrs: None,
+        };
 
         // Act
-        let actual_cidrs = range.exact_fit();
+        let actual_updated_range = range.find_cidr(RangeMode::ExactFit);
 
         // Assert
-        assert_eq!(actual_cidrs, expected_cidrs);
+        match actual_updated_range {
+            IpRange::V4 { cidrs, .. } => {
+                assert_eq!(cidrs, &expected_cidrs);
+            }
+            _ => panic!("Expected IpRange::V4"),
+        }
     }
 
     #[test]
-    fn test_exact_fit_v4_crosses_octet_boundary() {
+    fn test_find_exact_fit_v4_crosses_octet_boundary() {
         // Arrange
         let expected_start = String::from("10.0.0.254").parse().unwrap();
         let expected_end = String::from("10.0.1.1").parse().unwrap();
         let expected_ipv4_cidr1 = String::from("10.0.0.254/31").parse().unwrap();
         let expected_ipv4_cidr2 = String::from("10.0.1.0/31").parse().unwrap();
-        let expected_cidrs = vec![Cidr::V4(expected_ipv4_cidr1), Cidr::V4(expected_ipv4_cidr2)];
-        let range = IpRange::V4(Ipv4Range::new(expected_start, expected_end));
+        let expected_cidrs = Some(vec![
+            Cidr::V4(expected_ipv4_cidr1),
+            Cidr::V4(expected_ipv4_cidr2),
+        ]);
+        let mut range = IpRange::V4 {
+            range: Ipv4Range::new(expected_start, expected_end),
+            cidrs: None,
+        };
 
         // Act
-        let actual_cidrs = range.exact_fit();
+        let actual_updated_range = range.find_cidr(RangeMode::ExactFit);
 
         // Assert
-        assert_eq!(actual_cidrs, expected_cidrs);
+        match actual_updated_range {
+            IpRange::V4 { cidrs, .. } => {
+                assert_eq!(cidrs, &expected_cidrs);
+            }
+            _ => panic!("Expected IpRange::V4"),
+        }
     }
 
     #[test]
-    fn test_exact_fit_v6() {
+    fn test_find_exact_fit_v6() {
         // Arrange
         let expected_start = String::from("2001:db8::10").parse().unwrap();
         let expected_end = String::from("2001:db8::20").parse().unwrap();
         let expected_ipv6_cidr1 = String::from("2001:db8::10/124").parse().unwrap();
         let expected_ipv6_cidr2 = String::from("2001:db8::20/128").parse().unwrap();
-        let expected_cidrs = vec![Cidr::V6(expected_ipv6_cidr1), Cidr::V6(expected_ipv6_cidr2)];
-        let range = IpRange::V6(Ipv6Range::new(expected_start, expected_end));
+        let expected_cidrs = Some(vec![
+            Cidr::V6(expected_ipv6_cidr1),
+            Cidr::V6(expected_ipv6_cidr2),
+        ]);
+        let mut range = IpRange::V6 {
+            range: Ipv6Range::new(expected_start, expected_end),
+            cidrs: None,
+        };
 
         // Act
-        let actual_cidrs = range.exact_fit();
+        let actual_updated_range = range.find_cidr(RangeMode::ExactFit);
 
         // Assert
-        assert_eq!(actual_cidrs, expected_cidrs);
+        match actual_updated_range {
+            IpRange::V6 { cidrs, .. } => {
+                assert_eq!(cidrs, &expected_cidrs);
+            }
+            _ => panic!("Expected IpRange::V6"),
+        }
     }
 
     #[test]
-    fn test_exact_fit_v6_unaligned_start() {
+    fn test_find_exact_fit_v6_unaligned_start() {
         // Arrange
         let expected_start = String::from("2001:db8::5").parse().unwrap();
         let expected_end = String::from("2001:db8::a").parse().unwrap();
@@ -665,117 +824,176 @@ mod tests {
         let expected_ipv6_cidr2 = String::from("2001:db8::6/127").parse().unwrap();
         let expected_ipv6_cidr3 = String::from("2001:db8::8/127").parse().unwrap();
         let expected_ipv6_cidr4 = String::from("2001:db8::a/128").parse().unwrap();
-        let expected_cidrs = vec![
+        let expected_cidrs = Some(vec![
             Cidr::V6(expected_ipv6_cidr1),
             Cidr::V6(expected_ipv6_cidr2),
             Cidr::V6(expected_ipv6_cidr3),
             Cidr::V6(expected_ipv6_cidr4),
-        ];
-        let range = IpRange::V6(Ipv6Range::new(expected_start, expected_end));
+        ]);
+        let mut range = IpRange::V6 {
+            range: Ipv6Range::new(expected_start, expected_end),
+            cidrs: None,
+        };
 
         // Act
-        let actual_cidrs = range.exact_fit();
+        let actual_updated_range = range.find_cidr(RangeMode::ExactFit);
 
         // Assert
-        assert_eq!(actual_cidrs, expected_cidrs);
+        match actual_updated_range {
+            IpRange::V6 { cidrs, .. } => {
+                assert_eq!(cidrs, &expected_cidrs);
+            }
+            _ => panic!("Expected IpRange::V6"),
+        }
     }
 
     #[test]
-    fn test_exact_fit_v6_single_address() {
+    fn test_find_exact_fit_v6_single_address() {
         // Arrange
         let expected_start = String::from("2001:db8::10").parse().unwrap();
         let expected_end = String::from("2001:db8::10").parse().unwrap();
         let expected_ipv6_cidr1 = String::from("2001:db8::10/128").parse().unwrap();
-        let expected_cidrs = vec![Cidr::V6(expected_ipv6_cidr1)];
-        let range = IpRange::V6(Ipv6Range::new(expected_start, expected_end));
+        let expected_cidrs = Some(vec![Cidr::V6(expected_ipv6_cidr1)]);
+        let mut range = IpRange::V6 {
+            range: Ipv6Range::new(expected_start, expected_end),
+            cidrs: None,
+        };
 
         // Act
-        let actual_cidrs = range.exact_fit();
+        let actual_updated_range = range.find_cidr(RangeMode::ExactFit);
 
         // Assert
-        assert_eq!(actual_cidrs, expected_cidrs);
+        match actual_updated_range {
+            IpRange::V6 { cidrs, .. } => {
+                assert_eq!(cidrs, &expected_cidrs);
+            }
+            _ => panic!("Expected IpRange::V6"),
+        }
     }
 
     #[test]
-    fn test_exact_fit_v6_single_octet() {
+    fn test_find_exact_fit_v6_single_octet() {
         // Arrange
         let expected_start = String::from("2001:db8::").parse().unwrap();
         let expected_end = String::from("2001:db8::ff").parse().unwrap();
         let expected_ipv6_cidr1 = String::from("2001:db8::/120").parse().unwrap();
-        let expected_cidrs = vec![Cidr::V6(expected_ipv6_cidr1)];
-        let range = IpRange::V6(Ipv6Range::new(expected_start, expected_end));
+        let expected_cidrs = Some(vec![Cidr::V6(expected_ipv6_cidr1)]);
+        let mut range = IpRange::V6 {
+            range: Ipv6Range::new(expected_start, expected_end),
+            cidrs: None,
+        };
 
         // Act
-        let actual_cidrs = range.exact_fit();
+        let actual_updated_range = range.find_cidr(RangeMode::ExactFit);
 
         // Assert
-        assert_eq!(actual_cidrs, expected_cidrs);
+        match actual_updated_range {
+            IpRange::V6 { cidrs, .. } => {
+                assert_eq!(cidrs, &expected_cidrs);
+            }
+            _ => panic!("Expected IpRange::V6"),
+        }
     }
 
     #[test]
-    fn test_exact_fit_v6_entire_network() {
+    fn test_find_exact_fit_v6_entire_network() {
         // Arrange
         let expected_start = String::from("::").parse().unwrap();
         let expected_end = String::from("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")
             .parse()
             .unwrap();
         let expected_ipv6_cidr1 = String::from("::/0").parse().unwrap();
-        let expected_cidrs = vec![Cidr::V6(expected_ipv6_cidr1)];
-        let range = IpRange::V6(Ipv6Range::new(expected_start, expected_end));
+        let expected_cidrs = Some(vec![Cidr::V6(expected_ipv6_cidr1)]);
+        let mut range = IpRange::V6 {
+            range: Ipv6Range::new(expected_start, expected_end),
+            cidrs: None,
+        };
 
         // Act
-        let actual_cidrs = range.exact_fit();
+        let actual_updated_range = range.find_cidr(RangeMode::ExactFit);
 
         // Assert
-        assert_eq!(actual_cidrs, expected_cidrs);
+        match actual_updated_range {
+            IpRange::V6 { cidrs, .. } => {
+                assert_eq!(cidrs, &expected_cidrs);
+            }
+            _ => panic!("Expected IpRange::V6"),
+        }
     }
 
     #[test]
-    fn test_exact_fit_v6_aligned_block() {
+    fn test_find_exact_fit_v6_aligned_block() {
         // Arrange
         let expected_start = String::from("2001:db8::10").parse().unwrap();
         let expected_end = String::from("2001:db8::1f").parse().unwrap();
         let expected_ipv6_cidr1 = String::from("2001:db8::10/124").parse().unwrap();
-        let expected_cidrs = vec![Cidr::V6(expected_ipv6_cidr1)];
-        let range = IpRange::V6(Ipv6Range::new(expected_start, expected_end));
+        let expected_cidrs = Some(vec![Cidr::V6(expected_ipv6_cidr1)]);
+        let mut range = IpRange::V6 {
+            range: Ipv6Range::new(expected_start, expected_end),
+            cidrs: None,
+        };
 
         // Act
-        let actual_cidrs = range.exact_fit();
+        let actual_updated_range = range.find_cidr(RangeMode::ExactFit);
 
         // Assert
-        assert_eq!(actual_cidrs, expected_cidrs);
+        match actual_updated_range {
+            IpRange::V6 { cidrs, .. } => {
+                assert_eq!(cidrs, &expected_cidrs);
+            }
+            _ => panic!("Expected IpRange::V6"),
+        }
     }
 
     #[test]
-    fn test_exact_fit_v6_grows_block() {
+    fn test_find_exact_fit_v6_grows_block() {
         // Arrange
         let expected_start = String::from("2001:db8::8").parse().unwrap();
         let expected_end = String::from("2001:db8::b").parse().unwrap();
         let expected_ipv6_cidr1 = String::from("2001:db8::8/126").parse().unwrap();
-        let expected_cidrs = vec![Cidr::V6(expected_ipv6_cidr1)];
-        let range = IpRange::V6(Ipv6Range::new(expected_start, expected_end));
+        let expected_cidrs = Some(vec![Cidr::V6(expected_ipv6_cidr1)]);
+        let mut range = IpRange::V6 {
+            range: Ipv6Range::new(expected_start, expected_end),
+            cidrs: None,
+        };
 
         // Act
-        let actual_cidrs = range.exact_fit();
+        let actual_updated_range = range.find_cidr(RangeMode::ExactFit);
 
         // Assert
-        assert_eq!(actual_cidrs, expected_cidrs);
+        match actual_updated_range {
+            IpRange::V6 { cidrs, .. } => {
+                assert_eq!(cidrs, &expected_cidrs);
+            }
+            _ => panic!("Expected IpRange::V6"),
+        }
     }
 
     #[test]
-    fn test_exact_fit_v6_crosses_octet_boundary() {
+    fn test_find_exact_fit_v6_crosses_octet_boundary() {
         // Arrange
         let expected_start = String::from("2001:db8::fffe").parse().unwrap();
         let expected_end = String::from("2001:db8::1:1").parse().unwrap();
         let expected_ipv6_cidr1 = String::from("2001:db8::fffe/127").parse().unwrap();
         let expected_ipv6_cidr2 = String::from("2001:db8::1:0/127").parse().unwrap();
-        let expected_cidrs = vec![Cidr::V6(expected_ipv6_cidr1), Cidr::V6(expected_ipv6_cidr2)];
-        let range = IpRange::V6(Ipv6Range::new(expected_start, expected_end));
+        let expected_cidrs = Some(vec![
+            Cidr::V6(expected_ipv6_cidr1),
+            Cidr::V6(expected_ipv6_cidr2),
+        ]);
+        let mut range = IpRange::V6 {
+            range: Ipv6Range::new(expected_start, expected_end),
+            cidrs: None,
+        };
 
         // Act
-        let actual_cidrs = range.exact_fit();
+        let actual_updated_range = range.find_cidr(RangeMode::ExactFit);
 
         // Assert
-        assert_eq!(actual_cidrs, expected_cidrs);
+        match actual_updated_range {
+            IpRange::V6 { cidrs, .. } => {
+                assert_eq!(cidrs, &expected_cidrs);
+            }
+            _ => panic!("Expected IpRange::V6"),
+        }
     }
 }

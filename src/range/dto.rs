@@ -1,58 +1,88 @@
 use serde::Serialize;
 use tabled::Tabled;
 
-use crate::{Cidr, IpNetwork};
+use crate::{AddressRange, IpNetwork, IpRange};
 
 #[derive(Debug, Tabled, PartialEq)]
 pub struct RangeCombinedInfo {
     ip_ver: &'static str,
-    cidr: String,
     start: String,
     end: String,
+    cidr: String,
+    cidr_start: String,
+    cidr_end: String,
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize)]
 pub struct RangeInfo {
     ip_version: &'static str,
-    cidr: String,
     start: String,
     end: String,
+    cidr: String,
+    cidr_start: String,
+    cidr_end: String,
 }
 
-impl From<Cidr> for RangeCombinedInfo {
-    fn from(value: Cidr) -> Self {
+impl From<IpRange> for Vec<RangeCombinedInfo> {
+    fn from(value: IpRange) -> Self {
         match value {
-            Cidr::V4(v4) => Self {
-                ip_ver: "v4",
-                cidr: v4.to_string(),
-                start: v4.first_address().to_string(),
-                end: v4.last_address().to_string(),
-            },
-            Cidr::V6(v6) => Self {
-                ip_ver: "v6",
-                cidr: v6.to_string(),
-                start: v6.first_address().to_string(),
-                end: v6.last_address().to_string(),
-            },
+            IpRange::V4 { range, cidrs } => cidrs
+                .into_iter()
+                .flatten()
+                .map(|cidr| RangeCombinedInfo {
+                    ip_ver: "v4",
+                    start: range.start().to_string(),
+                    end: range.end().to_string(),
+                    cidr: cidr.to_string(),
+                    cidr_start: cidr.first_address().to_string(),
+                    cidr_end: cidr.last_address().to_string(),
+                })
+                .collect(),
+
+            IpRange::V6 { range, cidrs } => cidrs
+                .into_iter()
+                .flatten()
+                .map(|cidr| RangeCombinedInfo {
+                    ip_ver: "v6",
+                    start: range.start().to_string(),
+                    end: range.end().to_string(),
+                    cidr: cidr.to_string(),
+                    cidr_start: cidr.first_address().to_string(),
+                    cidr_end: cidr.last_address().to_string(),
+                })
+                .collect(),
         }
     }
 }
 
-impl From<Cidr> for RangeInfo {
-    fn from(value: Cidr) -> Self {
+impl From<IpRange> for Vec<RangeInfo> {
+    fn from(value: IpRange) -> Self {
         match value {
-            Cidr::V4(v4) => Self {
-                ip_version: "v4",
-                cidr: v4.to_string(),
-                start: v4.first_address().to_string(),
-                end: v4.last_address().to_string(),
-            },
-            Cidr::V6(v6) => Self {
-                ip_version: "v6",
-                cidr: v6.to_string(),
-                start: v6.first_address().to_string(),
-                end: v6.last_address().to_string(),
-            },
+            IpRange::V4 { range, cidrs } => cidrs
+                .into_iter()
+                .flatten()
+                .map(|cidr| RangeInfo {
+                    ip_version: "v4",
+                    start: range.start().to_string(),
+                    end: range.end().to_string(),
+                    cidr: cidr.to_string(),
+                    cidr_start: cidr.first_address().to_string(),
+                    cidr_end: cidr.last_address().to_string(),
+                })
+                .collect(),
+
+            IpRange::V6 { range, cidrs } => cidrs
+                .into_iter()
+                .flatten()
+                .map(|cidr| RangeInfo {
+                    ip_version: "v6",
+                    start: range.start().to_string(),
+                    end: range.end().to_string(),
+                    cidr: cidr.to_string(),
+                    cidr_start: cidr.first_address().to_string(),
+                    cidr_end: cidr.last_address().to_string(),
+                })
+                .collect(),
         }
     }
 }
@@ -61,102 +91,142 @@ impl From<Cidr> for RangeInfo {
 mod tests {
     use std::net::{Ipv4Addr, Ipv6Addr};
 
-    use crate::{Ipv4Cidr, Ipv6Cidr};
+    use crate::{Ipv4Range, Ipv6Range, range::RangeMode};
 
     use super::*;
 
-    const EXPECTED_IPV4_STR: &str = "10.22.135.144";
-    const EXPECTED_IPV6_STR: &str = "2001:db8:1::ab9:c0a8:102";
+    const EXPECTED_IPV4_STR: &str = "10.0.0.0";
+    const EXPECTED_IPV6_STR: &str = "2001:db8::";
 
     #[test]
-    fn test_range_tabled_info_from_cidr_v4() {
+    fn test_range_tabled_info_from_range_v4() {
         // Arrange
-        let expected_address: Ipv4Addr = EXPECTED_IPV4_STR.parse().unwrap();
-        let expected_prefix: u8 = 24;
+        let expected_range_start_string = String::from("10.0.0.10");
+        let expected_range_end_string = String::from("10.0.0.20");
+        let expected_range_start: Ipv4Addr = expected_range_start_string.parse().unwrap();
+        let expected_range_end: Ipv4Addr = expected_range_end_string.parse().unwrap();
+        let expected_prefix: u8 = 27;
         let expected_cidr_string: String = format!("{EXPECTED_IPV4_STR}/{expected_prefix}");
-        let expected_subnet_address: String = String::from("10.22.135.0");
-        let expected_broadcast_ip: String = String::from("10.22.135.255");
-        let expected_cidr_info = RangeCombinedInfo {
+        let expected_cidr_start: String = String::from("10.0.0.0");
+        let expected_cidr_end: String = String::from("10.0.0.31");
+        let expected_range_info = vec![RangeCombinedInfo {
             ip_ver: "v4",
+            start: expected_range_start_string,
+            end: expected_range_end_string,
             cidr: expected_cidr_string,
-            start: expected_subnet_address,
-            end: expected_broadcast_ip,
-        };
+            cidr_start: expected_cidr_start,
+            cidr_end: expected_cidr_end,
+        }];
 
-        let expected_cidr = Ipv4Cidr::new(expected_address, expected_prefix).unwrap();
+        let mut expected_range = IpRange::V4 {
+            range: Ipv4Range::new(expected_range_start, expected_range_end),
+            cidrs: None,
+        };
+        expected_range.find_cidr(RangeMode::SmallestCommon);
 
         // Act
-        let actual_cidr_info = RangeCombinedInfo::from(Cidr::V4(expected_cidr));
+        let actual_range_info: Vec<RangeCombinedInfo> = expected_range.into();
 
         // Assert
-        assert_eq!(actual_cidr_info, expected_cidr_info);
+        assert_eq!(actual_range_info, expected_range_info);
     }
 
     #[test]
     fn test_range_tabled_info_from_cidr_v6() {
         // Arrange
-        let expected_address: Ipv6Addr = EXPECTED_IPV6_STR.parse().unwrap();
-        let expected_prefix_len: u8 = 64;
+        let expected_range_start_string = String::from("2001:db8::10");
+        let expected_range_end_string = String::from("2001:db8::20");
+        let expected_range_start: Ipv6Addr = expected_range_start_string.parse().unwrap();
+        let expected_range_end: Ipv6Addr = expected_range_end_string.parse().unwrap();
+        let expected_cidr_start: String = String::from("2001:db8::");
+        let expected_cidr_end: String = String::from("2001:db8::3f");
+        let expected_prefix_len: u8 = 122;
         let expected_cidr_str: String = format!("{EXPECTED_IPV6_STR}/{expected_prefix_len}");
-        let expected_cidr_info = RangeCombinedInfo {
+        let expected_range_info = vec![RangeCombinedInfo {
             ip_ver: "v6",
+            start: expected_range_start_string,
+            end: expected_range_end_string,
             cidr: expected_cidr_str,
-            start: String::from("2001:db8:1::"),
-            end: String::from("2001:db8:1:0:ffff:ffff:ffff:ffff"),
-        };
+            cidr_start: expected_cidr_start,
+            cidr_end: expected_cidr_end,
+        }];
 
-        let expected_cidr = Ipv6Cidr::new(expected_address, expected_prefix_len).unwrap();
+        let mut expected_range = IpRange::V6 {
+            range: Ipv6Range::new(expected_range_start, expected_range_end),
+            cidrs: None,
+        };
+        expected_range.find_cidr(RangeMode::SmallestCommon);
 
         // Act
-        let actual_cidr_info = RangeCombinedInfo::from(Cidr::V6(expected_cidr));
+        let actual_range_info: Vec<RangeCombinedInfo> = expected_range.into();
 
         // Assert
-        assert_eq!(actual_cidr_info, expected_cidr_info);
+        assert_eq!(actual_range_info, expected_range_info);
     }
 
     #[test]
-    fn test_range_json_info_from_cidr_v4() {
+    fn test_range_json_info_from_range_v4() {
         // Arrange
-        let expected_address: Ipv4Addr = EXPECTED_IPV4_STR.parse().unwrap();
-        let expected_prefix: u8 = 24;
+        let expected_range_start_string = String::from("10.0.0.10");
+        let expected_range_end_string = String::from("10.0.0.20");
+        let expected_range_start: Ipv4Addr = expected_range_start_string.parse().unwrap();
+        let expected_range_end: Ipv4Addr = expected_range_end_string.parse().unwrap();
+        let expected_prefix: u8 = 27;
         let expected_cidr_string: String = format!("{EXPECTED_IPV4_STR}/{expected_prefix}");
-        let expected_subnet_address: String = String::from("10.22.135.0");
-        let expected_broadcast_ip: String = String::from("10.22.135.255");
-        let expected_cidr_info = RangeInfo {
+        let expected_cidr_start: String = String::from("10.0.0.0");
+        let expected_cidr_end: String = String::from("10.0.0.31");
+        let expected_range_info = vec![RangeInfo {
             ip_version: "v4",
+            start: expected_range_start_string,
+            end: expected_range_end_string,
             cidr: expected_cidr_string,
-            start: expected_subnet_address,
-            end: expected_broadcast_ip,
-        };
+            cidr_start: expected_cidr_start,
+            cidr_end: expected_cidr_end,
+        }];
 
-        let expected_cidr = Ipv4Cidr::new(expected_address, expected_prefix).unwrap();
+        let mut expected_range = IpRange::V4 {
+            range: Ipv4Range::new(expected_range_start, expected_range_end),
+            cidrs: None,
+        };
+        expected_range.find_cidr(RangeMode::SmallestCommon);
 
         // Act
-        let actual_cidr_info = RangeInfo::from(Cidr::V4(expected_cidr));
+        let actual_range_info: Vec<RangeInfo> = expected_range.into();
 
         // Assert
-        assert_eq!(actual_cidr_info, expected_cidr_info);
+        assert_eq!(actual_range_info, expected_range_info);
     }
 
     #[test]
     fn test_range_json_info_from_cidr_v6() {
         // Arrange
-        let expected_address: Ipv6Addr = EXPECTED_IPV6_STR.parse().unwrap();
-        let expected_prefix_len: u8 = 64;
+        let expected_range_start_string = String::from("2001:db8::10");
+        let expected_range_end_string = String::from("2001:db8::20");
+        let expected_range_start: Ipv6Addr = expected_range_start_string.parse().unwrap();
+        let expected_range_end: Ipv6Addr = expected_range_end_string.parse().unwrap();
+        let expected_cidr_start: String = String::from("2001:db8::");
+        let expected_cidr_end: String = String::from("2001:db8::3f");
+        let expected_prefix_len: u8 = 122;
         let expected_cidr_str: String = format!("{EXPECTED_IPV6_STR}/{expected_prefix_len}");
-        let expected_cidr_info = RangeInfo {
+        let expected_range_info = vec![RangeInfo {
             ip_version: "v6",
+            start: expected_range_start_string,
+            end: expected_range_end_string,
             cidr: expected_cidr_str,
-            start: String::from("2001:db8:1::"),
-            end: String::from("2001:db8:1:0:ffff:ffff:ffff:ffff"),
-        };
+            cidr_start: expected_cidr_start,
+            cidr_end: expected_cidr_end,
+        }];
 
-        let expected_cidr = Ipv6Cidr::new(expected_address, expected_prefix_len).unwrap();
+        let mut expected_range = IpRange::V6 {
+            range: Ipv6Range::new(expected_range_start, expected_range_end),
+            cidrs: None,
+        };
+        expected_range.find_cidr(RangeMode::SmallestCommon);
 
         // Act
-        let actual_cidr_info = RangeInfo::from(Cidr::V6(expected_cidr));
+        let actual_range_info: Vec<RangeInfo> = expected_range.into();
 
         // Assert
-        assert_eq!(actual_cidr_info, expected_cidr_info);
+        assert_eq!(actual_range_info, expected_range_info);
     }
 }

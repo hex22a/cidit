@@ -24,6 +24,7 @@ pub use net::ipv6::Ipv6CidrError;
 pub use net::ipv6::Ipv6Network;
 pub use range::AddressRange;
 pub use range::IpRange;
+pub use range::RangeMode;
 pub use range::dto::RangeCombinedInfo;
 pub use range::dto::RangeInfo;
 pub use range::ipv4::Ipv4Range;

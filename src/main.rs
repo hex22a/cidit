@@ -2,6 +2,7 @@ mod print;
 
 use cidit::{
     AddressRange, Cidr, CidrCombinedInfo, CidrInfo, IpRange, RangeCombinedInfo, RangeInfo,
+    RangeMode,
 };
 use clap::{Parser, ValueEnum};
 
@@ -45,30 +46,42 @@ fn main() {
 
     match args.range {
         Some(ranges) => {
-            let cidrs = ranges.iter().flat_map(|range| {
-                let range = range.parse::<IpRange>().unwrap_or_else(|e| {
+            let ranges = ranges.iter().map(|range| {
+                let mut range = range.parse::<IpRange>().unwrap_or_else(|e| {
                     eprintln!("'{range}': {e}");
                     std::process::exit(1);
                 });
 
-                if args.exact {
-                    range.exact_fit().into_iter()
+                let mode = if args.exact {
+                    RangeMode::ExactFit
                 } else {
-                    vec![range.smallest_common_cidr()].into_iter()
-                }
+                    RangeMode::SmallestCommon
+                };
+
+                range.find_cidr(mode);
+                range
             });
 
             match args.format {
                 OutputFormat::Json => {
-                    let info = cidrs.map(RangeInfo::from);
+                    let info = ranges.map(|range| {
+                        let info: Vec<RangeInfo> = range.into();
+                        info
+                    });
                     print::print_json(info, args.pretty);
                 }
                 OutputFormat::Table => {
-                    let info = cidrs.map(RangeCombinedInfo::from);
+                    let info = ranges.flat_map(|range| {
+                        let info: Vec<RangeCombinedInfo> = range.into();
+                        info
+                    });
                     print::print_table(info, args.headless);
                 }
                 OutputFormat::Ndjson => {
-                    let info = cidrs.map(RangeInfo::from);
+                    let info = ranges.map(|range| {
+                        let info: Vec<RangeInfo> = range.into();
+                        info
+                    });
                     print::print_ndjson(info);
                 }
             }
