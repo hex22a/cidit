@@ -1,5 +1,55 @@
 # Changelog
 
+## [4.0.0](https://github.com/hex22a/cidit/compare/v3.3.0...v4.0.0) (2026-09-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* Changed addr trait method name to address
+* Output original ranges when finding CIDRs from ranges
+* Delegate Cidr Display implementation to individual types
+* Comply with RFC 6164. network_address and broadcast_address methods reeturn Option type
+* Moved Info types into their own DTO modules. Simplified print functions
+* Introduced Addr and Net associated types for AddressRange trait
+* DRY range arithmenitcs. CIDR types constructors accept IP types instead of raw numbers
+* Return IP types in network traits instead of raw numbers
+* Formatted error output. Error types are re-exported
+* Dropped ipnet dependency. Optimized compile time
+* Added netmask method to calculate netmask ad-hoc. Optimized memory usage for ipv4 net
+* Replaced own IPv4 implementation with the standard library
+* Removed redundant Inspection result type
+* Changed IPv4 to tuple struct
+* Removed redundant Ipv4CidrParts type
+
+### Features
+
+* Added formatted print for ranges ([0cc7370](https://github.com/hex22a/cidit/commit/0cc73701b016d06892352224f1d1dec34936f71a))
+* Formatted error output. Error types are re-exported ([91ddc05](https://github.com/hex22a/cidit/commit/91ddc05a5ff85b37780663b15ef83ecf1645c728))
+* Lazy print in ndjson format. Values are parsed and printed one by one saving memory ([9580982](https://github.com/hex22a/cidit/commit/958098296f5036fdeecf1dfcaebc84fd1dc23831))
+* Output original ranges when finding CIDRs from ranges ([d6354a3](https://github.com/hex22a/cidit/commit/d6354a38a188dd250b0eba8bd3459072da76b985))
+
+
+### Bug Fixes
+
+* Added netmask method to calculate netmask ad-hoc. Optimized memory usage for ipv4 net ([76972dc](https://github.com/hex22a/cidit/commit/76972dc401816f9335767c8b38dc9251a1016f67))
+* Avoid double memory allocation when calculating CIDR from range ([9ae216d](https://github.com/hex22a/cidit/commit/9ae216dfb66d1708ceb4e10189e272971e22a242))
+* Changed IPv4 to tuple struct ([3f40970](https://github.com/hex22a/cidit/commit/3f40970ff06005a0f63bc25705db4f76e5c39ca9))
+* Comply with RFC 6164. network_address and broadcast_address methods reeturn Option type ([d645187](https://github.com/hex22a/cidit/commit/d645187df3feff30e8d5d38c1f6db5a40a6f9418))
+* Delegate Cidr Display implementation to individual types ([bc0ca10](https://github.com/hex22a/cidit/commit/bc0ca1026bed9d9d9c80497b9032f8b5c3225007))
+* Dropped ipnet dependency. Optimized compile time ([84ddb97](https://github.com/hex22a/cidit/commit/84ddb972d3241275c7678a5329cead03a43095e2))
+* DRY range arithmenitcs. CIDR types constructors accept IP types instead of raw numbers ([c23d438](https://github.com/hex22a/cidit/commit/c23d438fd6e875230ad3153ca8985d9b2c548d02))
+* Introduced Addr and Net associated types for AddressRange trait ([1558d5f](https://github.com/hex22a/cidit/commit/1558d5f9a5e67d0196530c709506e3ad7915c4d8))
+* Moved Info types into their own DTO modules. Simplified print functions ([ac7287a](https://github.com/hex22a/cidit/commit/ac7287a381580ca1a8965cefeeda4db1795fda7a))
+* Removed redundant Inspection result type ([3f3ca83](https://github.com/hex22a/cidit/commit/3f3ca83337d06fba41421a09833cb1a6e567ca76))
+* Removed redundant Ipv4CidrParts type ([63c1734](https://github.com/hex22a/cidit/commit/63c1734ba89d966370921690c18acb3af2d6a56b))
+* Replaced own IPv4 implementation with the standard library ([1fdd2cf](https://github.com/hex22a/cidit/commit/1fdd2cf41b99008373efb576773e602cc0cdf561))
+* Return IP types in network traits instead of raw numbers ([0e706bf](https://github.com/hex22a/cidit/commit/0e706bf6b6f7d17a3ab89a22ab15b24efe450e16))
+
+
+### Miscellaneous Chores
+
+* Changed addr trait method name to address ([9e98cfa](https://github.com/hex22a/cidit/commit/9e98cfa615c2c93e6777e80e2171aa66b2ece177))
+
 ## [3.3.0](https://github.com/hex22a/cidit/compare/v3.2.4...v3.3.0) (2026-09-12)
 
 
