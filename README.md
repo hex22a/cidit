@@ -170,7 +170,7 @@ cargo test
 Build the binary
 
 ```bash
-cargo build
+cargo build --release
 ```
 
-This will create a binary in `target > debug` directory
+This will create a binary in `target > release` directory

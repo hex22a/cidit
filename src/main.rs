@@ -27,15 +27,19 @@ struct Args {
     #[arg(short, long, requires = "format")]
     pretty: bool,
 
-    /// Print table without header (only for --format=table)
+    /// Print table without a header (only for --format=table)
     #[arg(short = 'H', long)]
     headless: bool,
 
-    /// Get smallest CIDR that contains a given range
+    /// Find CIDR that fit the range.
+    /// By default searches for the smallest CIDR
+    /// that fits the entire range
+    /// (e.g. --range 10.0.0.10..10.0.0.20)
     #[arg(short, long, num_args=1..)]
     range: Option<Vec<String>>,
 
-    /// Get one or more CIDR blocks to exactly match the provided range
+    /// Overrides the range search mode
+    /// to get one or more CIDR blocks that exactly match the provided range
     /// (only for --range)
     #[arg(short, long, requires = "range")]
     exact: bool,
