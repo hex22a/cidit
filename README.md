@@ -8,7 +8,7 @@ Calculate Network Ranges for a given CIDR (IPv4 and IPv6)
 For example, `cidit 10.122.33.44/24` prints out the following information:
 
 ```shell
- ip_ver   cidr              address        prefix   network       first_usable   last_usable     broadcast       available   netmask   hostmask
+ IP_VER   CIDR              ADDRESS        PREFIX   NETWORK       FIRST_USABLE   LAST_USABLE     BROADCAST       AVAILABLE   NETMASK   HOSTMASK
  v4       10.122.33.44/24   10.122.33.44   24       10.122.33.0   10.122.33.1    10.122.33.254   10.122.33.255
 ```
 
@@ -49,7 +49,7 @@ cidit 10.122.33.44/24 10.255.55.66/20 2001:db8:1::ab9:c0a8:102/64
 Output:
 
 ```bash
- ip_ver   cidr                          address                    prefix   network        first_usable   last_usable     broadcast       available   netmask                 hostmask
+ IP_VER   CIDR                          ADDRESS                    PREFIX   NETWORK        FIRST_USABLE   LAST_USABLE     BROADCAST       AVAILABLE   NETMASK                 HOSTMASK
  v4       10.122.33.44/24               10.122.33.44               24       10.122.33.0    10.122.33.1    10.122.33.254   10.122.33.255
  v4       10.255.55.66/20               10.255.55.66               20       10.255.48.0    10.255.48.1    10.255.63.254   10.255.63.255
  v6       2001:db8:1::ab9:c0a8:102/64   2001:db8:1::ab9:c0a8:102   64       2001:db8:1::                                                  2^64        ffff:ffff:ffff:ffff::   ::ffff:ffff:ffff:ffff
@@ -100,23 +100,27 @@ cidit 10.122.33.44/24 10.255.55.66/20 2001:db8:1::ab9:c0a8:102/64 -f ndjson
 
 ### CIDR from a range
 
-Use **--range** option and provide a range to find a CIDR that fits the range.
+Use **--range** option and provide a list of ranges to find CIDRs
+that fit each range. Ranges are treated separately.
 Supported formats: `ip..ip`, `ip-ip`, `ip ip`.
 By default it finds a smallest CIDR that fits the entire range.
 
 ```bash
 cidit -r 10.0.0.10..10.0.0.20
-10.0.0.0/27
+ IP_VER   START       END         CIDR           CIDR_START   CIDR_END
+ v4       10.0.0.10   10.0.0.20   10.0.0.0/27    10.0.0.0     10.0.0.31
+ v4       10.0.0.20   10.0.0.30   10.0.0.20/28   10.0.0.16    10.0.0.31
 ```
 
 To find an exact match use **--exact** option
 
 ```bash
 cidit -er 10.0.0.10..10.0.0.20
-10.0.0.10/31
-10.0.0.12/30
-10.0.0.16/30
-10.0.0.20/32
+ IP_VER   START       END         CIDR           CIDR_START   CIDR_END
+ v4       10.0.0.10   10.0.0.20   10.0.0.10/31   10.0.0.10    10.0.0.11
+ v4       10.0.0.10   10.0.0.20   10.0.0.12/30   10.0.0.12    10.0.0.15
+ v4       10.0.0.10   10.0.0.20   10.0.0.16/30   10.0.0.16    10.0.0.19
+ v4       10.0.0.10   10.0.0.20   10.0.0.20/32   10.0.0.20    10.0.0.20
 ```
 
 ### Parallel execution
@@ -134,7 +138,20 @@ parallel cidit -H ::: 10.122.33.44/24 10.255.55.66/20 2001:db8:1::ab9:c0a8:102/6
 echo 10.122.33.44/24 10.255.55.66/20 2001:db8:1::ab9:c0a8:102/64 | xargs -n 1 -P0 cidit -H
 ```
 
+> _Note:_ It performs best used with `--format ndjson` option
+> as ndjson mode is lazy and uses **O(1)** memory
+
+```bash
+parallel cidit -f ndjson ::: 10.122.33.44/24 10.255.55.66/20 2001:db8:1::ab9:c0a8:102/64
+```
+
+```bash
+echo 10.122.33.44/24 10.255.55.66/20 2001:db8:1::ab9:c0a8:102/64 | xargs -n 1 -P0 cidit -f ndson
+```
+
 ### Compile from sources
+
+To get the latest unreleased version of cidit
 
 [Install Rust](https://rust-lang.org/tools/install/)
 
