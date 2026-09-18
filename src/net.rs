@@ -30,7 +30,7 @@ pub trait IpNetwork {
     type Bits: BitAnd + BitOr;
 
     /// Address
-    fn addr(&self) -> Self::Addr;
+    fn address(&self) -> Self::Addr;
 
     /// Prefix length
     fn prefix_len(&self) -> u8;
@@ -99,10 +99,10 @@ impl IpNetwork for Cidr {
     type Addr = IpAddr;
     type Bits = u128;
 
-    fn addr(&self) -> IpAddr {
+    fn address(&self) -> IpAddr {
         match self {
-            Cidr::V4(ipv4_cidr) => IpAddr::V4(ipv4_cidr.addr()),
-            Cidr::V6(ipv6_cidr) => IpAddr::V6(ipv6_cidr.addr()),
+            Cidr::V4(ipv4_cidr) => IpAddr::V4(ipv4_cidr.address()),
+            Cidr::V6(ipv6_cidr) => IpAddr::V6(ipv6_cidr.address()),
         }
     }
 
@@ -178,7 +178,7 @@ mod tests {
         match actual_net {
             Cidr::V4(cidr) => {
                 assert_eq!(cidr.prefix_len(), EXPECTED_IPV4_PREFIX);
-                assert_eq!(cidr.addr().to_string(), EXPECTED_IPV4_STR);
+                assert_eq!(cidr.address().to_string(), EXPECTED_IPV4_STR);
             }
             _ => panic!("Expected Cidr::V4"),
         }
@@ -196,7 +196,7 @@ mod tests {
         match actual_net {
             Cidr::V6(cidr) => {
                 assert_eq!(cidr.prefix_len(), EXPECTED_IPV6_PREFIX);
-                assert_eq!(cidr.addr().to_string(), EXPECTED_IPV6_STR);
+                assert_eq!(cidr.address().to_string(), EXPECTED_IPV6_STR);
             }
             _ => panic!("Expected Cidr::V6"),
         }

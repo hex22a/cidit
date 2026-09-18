@@ -27,7 +27,7 @@ pub enum Ipv6CidrError {
 /// Internal representation of IPv6 CIDR
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Ipv6Cidr {
-    ip: Ipv6Addr,
+    address: Ipv6Addr,
     prefix: u8,
 }
 
@@ -36,10 +36,7 @@ impl Ipv6Cidr {
         if prefix > MAX_IPV6_CIDR_PREFIX_LEN {
             return Err(Ipv6CidrError::PrefixLen(prefix));
         }
-        Ok(Self {
-            ip: address,
-            prefix,
-        })
+        Ok(Self { address, prefix })
     }
 }
 
@@ -56,7 +53,7 @@ impl FromStr for Ipv6Cidr {
 
 impl Display for Ipv6Cidr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}/{}", self.ip, self.prefix)
+        write!(f, "{}/{}", self.address, self.prefix)
     }
 }
 
@@ -97,8 +94,8 @@ impl IpNetwork for Ipv6Cidr {
     type Addr = Ipv6Addr;
     type Bits = u128;
 
-    fn addr(&self) -> Ipv6Addr {
-        self.ip
+    fn address(&self) -> Ipv6Addr {
+        self.address
     }
 
     fn prefix_len(&self) -> u8 {
@@ -130,7 +127,7 @@ impl IpNetwork for Ipv6Cidr {
     }
 
     fn first_address(&self) -> Ipv6Addr {
-        Ipv6Addr::from_bits(self.ip.to_bits() & self.netmask_bits())
+        Ipv6Addr::from_bits(self.address.to_bits() & self.netmask_bits())
     }
 
     fn last_address(&self) -> Ipv6Addr {
@@ -174,7 +171,7 @@ mod test {
         let actual_cidr: Ipv6Cidr = Ipv6Cidr::new(expected_address, expected_prefix).unwrap();
 
         // Assert
-        assert_eq!(actual_cidr.ip, expected_address);
+        assert_eq!(actual_cidr.address, expected_address);
         assert_eq!(actual_cidr.prefix, expected_prefix);
     }
 
@@ -199,7 +196,7 @@ mod test {
         let expected_binary_address: u128 =
             Ipv6Addr::from_str(EXPECTED_IPV6_STR).unwrap().to_bits();
         let expected_cidr = Ipv6Cidr {
-            ip: Ipv6Addr::from_bits(expected_binary_address),
+            address: Ipv6Addr::from_bits(expected_binary_address),
             prefix: expected_prefix,
         };
 
@@ -259,7 +256,7 @@ mod test {
         .unwrap();
 
         // Act
-        let actual_addr = expected_ipv6_cidr.addr();
+        let actual_addr = expected_ipv6_cidr.address();
 
         // Assert
         assert_eq!(actual_addr, expected_address);

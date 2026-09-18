@@ -55,7 +55,7 @@ impl From<Cidr> for CidrCombinedInfo {
             Cidr::V4(v4) => CidrCombinedInfo {
                 ip_ver: "v4",
                 cidr: v4.to_string(),
-                address: v4.addr().to_string(),
+                address: v4.address().to_string(),
                 prefix: v4.prefix_len(),
                 first_usable: v4.first_usable().to_string(),
                 last_usable: v4.last_usable().to_string(),
@@ -72,7 +72,7 @@ impl From<Cidr> for CidrCombinedInfo {
             Cidr::V6(v6) => CidrCombinedInfo {
                 ip_ver: "v6",
                 cidr: v6.to_string(),
-                address: v6.addr().to_string(),
+                address: v6.address().to_string(),
                 prefix: v6.prefix_len(),
                 netmask: v6.netmask().to_string(),
                 hostmask: v6.hostmask().to_string(),
@@ -89,7 +89,7 @@ impl From<Cidr> for CidrInfo {
         match value {
             Cidr::V4(v4) => CidrInfo::V4(Ipv4CidrInfo {
                 cidr: v4.to_string(),
-                address: v4.addr().to_string(),
+                address: v4.address().to_string(),
                 prefix_length: v4.prefix_len(),
                 first_usable: v4.first_usable().to_string(),
                 last_usable: v4.last_usable().to_string(),
@@ -104,7 +104,7 @@ impl From<Cidr> for CidrInfo {
             }),
             Cidr::V6(v6) => CidrInfo::V6(Ipv6CidrInfo {
                 cidr: v6.to_string(),
-                address: v6.addr().to_string(),
+                address: v6.address().to_string(),
                 prefix_length: v6.prefix_len(),
                 netmask: v6.netmask().to_string(),
                 hostmask: v6.hostmask().to_string(),
