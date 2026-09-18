@@ -5,6 +5,7 @@ use crate::{
     range::{AddressRange, RangeMode},
 };
 
+/// Internal representation of IPv4 range
 pub struct Ipv4Range {
     start: Ipv4Addr,
     end: Ipv4Addr,
@@ -69,7 +70,17 @@ impl AddressRange for Ipv4Range {
 
 #[cfg(test)]
 mod tests {
+    use crate::test_helpers;
+
     use super::*;
+
+    #[test]
+    fn test_ipv4_range_type() {
+        // Arrange
+        // Act
+        // Assert
+        test_helpers::assert_normal_type::<Ipv4Range>();
+    }
 
     #[test]
     fn test_cidrs() {

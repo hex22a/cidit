@@ -3,6 +3,8 @@ use tabled::Tabled;
 
 use crate::{Cidr, IpNetwork, Ipv4Network, Ipv6Network};
 
+/// Combined CIDR inspection result.
+/// Represents details about both IPv4 and IPv6 CIDR blocks
 #[derive(Debug, Tabled, Default, PartialEq)]
 #[tabled(rename_all = "SCREAMING_SNAKE_CASE")]
 pub struct CidrCombinedInfo {
@@ -19,6 +21,7 @@ pub struct CidrCombinedInfo {
     hostmask: String,
 }
 
+/// CIDR inspection result specific to IPv4
 #[derive(Debug, PartialEq, Eq, Serialize)]
 pub struct Ipv4CidrInfo {
     pub cidr: String,
@@ -30,7 +33,7 @@ pub struct Ipv4CidrInfo {
     pub broadcast: String,
 }
 
-/// Inspection result for IPv6
+/// CIDR inspection result specific to IPv6
 #[derive(Debug, PartialEq, Eq, Serialize)]
 pub struct Ipv6CidrInfo {
     pub cidr: String,
@@ -42,6 +45,8 @@ pub struct Ipv6CidrInfo {
     pub subnet_size: String,
 }
 
+/// Enum containing variants to represent either
+/// IPv4 or IPv6 CIDR inspection result
 #[derive(Debug, PartialEq, Eq, Serialize)]
 #[serde(tag = "ip_version", rename_all = "lowercase")]
 pub enum CidrInfo {
@@ -117,15 +122,46 @@ impl From<Cidr> for CidrInfo {
 
 #[cfg(test)]
 mod tests {
-
     use std::net::{Ipv4Addr, Ipv6Addr};
 
-    use crate::{Ipv4Cidr, Ipv6Cidr};
+    use crate::{Ipv4Cidr, Ipv6Cidr, test_helpers};
 
     use super::*;
 
     const EXPECTED_IPV4_STR: &str = "10.22.135.144";
     const EXPECTED_IPV6_STR: &str = "2001:db8:1::ab9:c0a8:102";
+
+    #[test]
+    fn test_cidr_combined_info_type() {
+        // Arrange
+        // Act
+        // Assert
+        test_helpers::assert_normal_type::<CidrCombinedInfo>();
+    }
+
+    #[test]
+    fn test_ipv4_cidr_info_type() {
+        // Arrange
+        // Act
+        // Assert
+        test_helpers::assert_normal_type::<Ipv4CidrInfo>();
+    }
+
+    #[test]
+    fn test_ipv6_cidr_info_type() {
+        // Arrange
+        // Act
+        // Assert
+        test_helpers::assert_normal_type::<Ipv6CidrInfo>();
+    }
+
+    #[test]
+    fn test_cidr_info_type() {
+        // Arrange
+        // Act
+        // Assert
+        test_helpers::assert_normal_type::<Ipv6CidrInfo>();
+    }
 
     #[test]
     fn test_cidr_info_from_cidr_v4() {

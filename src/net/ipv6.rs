@@ -57,16 +57,74 @@ impl Display for Ipv6Cidr {
     }
 }
 
-/// IPv6 Network
+/// Operations specific to IPv6 network
 pub trait Ipv6Network: IpNetwork {
-    /// Number of available IPs in a range
+    /// String representing a number of available IPs in a range
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use cidit::Ipv6Cidr;
+    /// use cidit::Ipv6Network;
+    ///
+    /// let ipv6_cidr: Ipv6Cidr = "2001:db8:1::ab9:c0a8:102/120".parse().unwrap();
+    ///
+    /// assert_eq!(ipv6_cidr.subnet_size(), "256");
+    /// ```
+    ///
+    /// ```
+    /// use cidit::Ipv6Cidr;
+    /// use cidit::Ipv6Network;
+    ///
+    /// let ipv6_cidr: Ipv6Cidr = "2001:db8:1::ab9:c0a8:102/8".parse().unwrap();
+    ///
+    /// assert_eq!(ipv6_cidr.subnet_size(), "2^120");
+    /// ```
     fn subnet_size(&self) -> String;
 
-    /// Gets network address for IPv6.
-    /// Returns None for network masks
-    /// /127 for point-to-point connections
+    /// Get network address for IPv6
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::net::Ipv6Addr;
+    /// use std::str::FromStr;
+    ///
+    /// use cidit::Ipv6Cidr;
+    /// use cidit::Ipv6Network;
+    ///
+    /// let ipv6_cidr: Ipv6Cidr = "2001:db8:1::ab9:c0a8:102/64".parse().unwrap();
+    /// let network_address = ipv6_cidr.network_address().unwrap();
+    ///
+    /// assert_eq!(network_address, Ipv6Addr::from_str("2001:db8:1::").unwrap());
+    /// ```
+    ///
+    /// # Point-to-Point
+    ///
+    /// Returns None if network masks is /127
     /// ([RFC 6164](https://datatracker.ietf.org/doc/html/rfc6164))
-    /// and /128 for single host
+    ///
+    /// ```
+    /// use cidit::Ipv6Cidr;
+    /// use cidit::Ipv6Network;
+    ///
+    /// let ipv6_cidr: Ipv6Cidr = "2001:db8:1::ab9:c0a8:102/127".parse().unwrap();
+    ///
+    /// assert_eq!(ipv6_cidr.network_address(), None);
+    /// ```
+    ///
+    /// # Single host
+    ///
+    /// Returns None if network mask is /128 (single host)
+    ///
+    /// ```
+    /// use cidit::Ipv6Cidr;
+    /// use cidit::Ipv6Network;
+    ///
+    /// let ipv6_cidr: Ipv6Cidr = "2001:db8:1::ab9:c0a8:102/128".parse().unwrap();
+    ///
+    /// assert_eq!(ipv6_cidr.network_address(), None);
+    /// ```
     fn network_address(&self) -> Option<Ipv6Addr>;
 }
 

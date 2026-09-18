@@ -55,28 +55,207 @@ impl Display for Ipv4Cidr {
     }
 }
 
-/// IPv4 Network
+/// Operations specific to IPv4 network
 pub trait Ipv4Network: IpNetwork {
-    /// Gets network address for IPv4.
-    /// Returns None for network masks
-    /// /31 for point-to-point connections
-    /// ([RFC 3021](https://datatracker.ietf.org/doc/html/rfc3021))
-    /// and /32 for single host
+    /// Get network address for IPv4
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::net::Ipv4Addr;
+    /// use std::str::FromStr;
+    ///
+    /// use cidit::Ipv4Cidr;
+    /// use cidit::Ipv4Network;
+    ///
+    /// let ipv4_cidr: Ipv4Cidr = "10.22.135.144/24".parse().unwrap();
+    /// let network_address = ipv4_cidr.network_address().unwrap();
+    ///
+    /// assert_eq!(network_address, Ipv4Addr::from_str("10.22.135.0").unwrap());
+    /// ```
+    ///
+    /// # Point-to-Point
+    ///
+    /// Returns None if network mask is /31
+    /// ([RFC 3021 (Point-to-Point)](https://datatracker.ietf.org/doc/html/rfc3021))
+    ///
+    /// ```
+    /// use std::net::Ipv4Addr;
+    /// use std::str::FromStr;
+    ///
+    /// use cidit::Ipv4Cidr;
+    /// use cidit::Ipv4Network;
+    ///
+    /// let ipv4_cidr: Ipv4Cidr = "10.22.135.144/31".parse().unwrap();
+    ///
+    /// assert_eq!(ipv4_cidr.network_address(), None);
+    /// ```
+    ///
+    /// # Single IP
+    ///
+    /// Returns None if network mask is /32 (single host)
+    ///
+    /// ```
+    /// use std::net::Ipv4Addr;
+    /// use std::str::FromStr;
+    ///
+    /// use cidit::Ipv4Cidr;
+    /// use cidit::Ipv4Network;
+    ///
+    /// let ipv4_cidr: Ipv4Cidr = "10.22.135.144/32".parse().unwrap();
+    ///
+    /// assert_eq!(ipv4_cidr.network_address(), None);
+    /// ```
     fn network_address(&self) -> Option<Ipv4Addr>;
 
-    /// Gets broadcast address for IPv4.
-    /// Returns None for network masks
-    /// /31 for point-to-point connections
-    /// ([RFC 3021](https://datatracker.ietf.org/doc/html/rfc3021))
-    /// and /32 for single host
+    /// Get broadcast address for IPv4
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::net::Ipv4Addr;
+    /// use std::str::FromStr;
+    ///
+    /// use cidit::Ipv4Cidr;
+    /// use cidit::Ipv4Network;
+    ///
+    /// let ipv4_cidr: Ipv4Cidr = "10.22.135.144/24".parse().unwrap();
+    /// let broadcast_address = ipv4_cidr.broadcast_address().unwrap();
+    ///
+    /// assert_eq!(broadcast_address, Ipv4Addr::from_str("10.22.135.255").unwrap());
+    /// ```
+    ///
+    /// # Point-to-Point
+    ///
+    /// Returns None if network mask is /31
+    /// ([RFC 3021 (Point-to-Point)](https://datatracker.ietf.org/doc/html/rfc3021))
+    ///
+    /// ```
+    /// use std::net::Ipv4Addr;
+    /// use std::str::FromStr;
+    ///
+    /// use cidit::Ipv4Cidr;
+    /// use cidit::Ipv4Network;
+    ///
+    /// let ipv4_cidr: Ipv4Cidr = "10.22.135.144/31".parse().unwrap();
+    ///
+    /// assert_eq!(ipv4_cidr.broadcast_address(), None);
+    /// ```
+    ///
+    /// # Single IP
+    ///
+    /// Returns None if network mask is /32 (single host)
+    ///
+    /// ```
+    /// use std::net::Ipv4Addr;
+    /// use std::str::FromStr;
+    ///
+    /// use cidit::Ipv4Cidr;
+    /// use cidit::Ipv4Network;
+    ///
+    /// let ipv4_cidr: Ipv4Cidr = "10.22.135.144/32".parse().unwrap();
+    ///
+    /// assert_eq!(ipv4_cidr.broadcast_address(), None);
+    /// ```
     fn broadcast_address(&self) -> Option<Ipv4Addr>;
 
-    /// Gets first usable IP address.
+    /// Get first usable IP address.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::net::Ipv4Addr;
+    /// use std::str::FromStr;
+    ///
+    /// use cidit::Ipv4Cidr;
+    /// use cidit::Ipv4Network;
+    ///
+    /// let ipv4_cidr: Ipv4Cidr = "10.22.135.144/24".parse().unwrap();
+    ///
+    /// assert_eq!(ipv4_cidr.first_usable(), Ipv4Addr::from_str("10.22.135.1").unwrap());
+    /// ```
+    ///
+    /// # Point-to-Point
+    ///
     /// For /31 network mask is the same as arithmetical first address
+    ///
+    /// ```
+    /// use std::net::Ipv4Addr;
+    /// use std::str::FromStr;
+    ///
+    /// use cidit::Ipv4Cidr;
+    /// use cidit::Ipv4Network;
+    ///
+    /// let ipv4_cidr: Ipv4Cidr = "10.22.135.144/31".parse().unwrap();
+    ///
+    /// assert_eq!(ipv4_cidr.first_usable(), Ipv4Addr::from_str("10.22.135.144").unwrap());
+    /// ```
+    ///
+    /// # Single IP
+    ///
+    /// For /32 network mask is the same as arithmetical first address
+    ///
+    /// ```
+    /// use std::net::Ipv4Addr;
+    /// use std::str::FromStr;
+    ///
+    /// use cidit::Ipv4Cidr;
+    /// use cidit::Ipv4Network;
+    ///
+    /// let ipv4_cidr: Ipv4Cidr = "10.22.135.144/32".parse().unwrap();
+    ///
+    /// assert_eq!(ipv4_cidr.first_usable(), Ipv4Addr::from_str("10.22.135.144").unwrap());
+    /// ```
     fn first_usable(&self) -> Ipv4Addr;
 
-    /// Gets last usable IP address.
-    /// For /31 network mask is the same as arithmetical first address
+    /// Get last usable IP address
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::net::Ipv4Addr;
+    /// use std::str::FromStr;
+    ///
+    /// use cidit::Ipv4Cidr;
+    /// use cidit::Ipv4Network;
+    ///
+    /// let ipv4_cidr: Ipv4Cidr = "10.22.135.144/24".parse().unwrap();
+    /// let broadcast_address = ipv4_cidr.broadcast_address().unwrap();
+    ///
+    /// assert_eq!(ipv4_cidr.last_usable(), Ipv4Addr::from_str("10.22.135.254").unwrap());
+    /// ```
+    ///
+    /// # Point-to-Point
+    ///
+    /// For /31 network mask is the same as arithmetical last address
+    ///
+    /// ```
+    /// use std::net::Ipv4Addr;
+    /// use std::str::FromStr;
+    ///
+    /// use cidit::Ipv4Cidr;
+    /// use cidit::Ipv4Network;
+    ///
+    /// let ipv4_cidr: Ipv4Cidr = "10.22.135.144/31".parse().unwrap();
+    ///
+    /// assert_eq!(ipv4_cidr.last_usable(), Ipv4Addr::from_str("10.22.135.145").unwrap());
+    /// ```
+    ///
+    /// # Single IP
+    ///
+    /// For /32 network mask is the same as arithmetical last address
+    ///
+    /// ```
+    /// use std::net::Ipv4Addr;
+    /// use std::str::FromStr;
+    ///
+    /// use cidit::Ipv4Cidr;
+    /// use cidit::Ipv4Network;
+    ///
+    /// let ipv4_cidr: Ipv4Cidr = "10.22.135.144/32".parse().unwrap();
+    ///
+    /// assert_eq!(ipv4_cidr.last_usable(), Ipv4Addr::from_str("10.22.135.144").unwrap());
+    /// ```
     fn last_usable(&self) -> Ipv4Addr;
 }
 

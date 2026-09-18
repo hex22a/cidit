@@ -29,20 +29,151 @@ pub enum RangeParseError {
     Inconsistent,
 }
 
+/// How to perform CIDR search
 pub enum RangeMode {
     ExactFit,
     SmallestCommon,
 }
 
+/// Operations over IP range
 pub trait AddressRange {
     type Addr: Debug + Display + PartialEq + PartialOrd;
 
+    /// Get start address
+    ///
+    /// # Example
+    /// ```
+    /// use std::net::Ipv4Addr;
+    /// use std::str::FromStr;
+    ///
+    /// use cidit::IpRange;
+    /// use cidit::AddressRange;
+    ///
+    /// let range: IpRange = "10.0.0.10..10.0.0.20".parse().unwrap();
+    ///
+    /// assert_eq!(range.start(), Ipv4Addr::from_str("10.0.0.10").unwrap())
+    /// ```
     fn start(&self) -> Self::Addr;
+
+    /// Get end address
+    ///
+    /// # Example
+    /// ```
+    /// use std::net::Ipv4Addr;
+    /// use std::str::FromStr;
+    ///
+    /// use cidit::IpRange;
+    /// use cidit::AddressRange;
+    ///
+    /// let range: IpRange = "10.0.0.10..10.0.0.20".parse().unwrap();
+    ///
+    /// assert_eq!(range.end(), Ipv4Addr::from_str("10.0.0.20").unwrap())
+    /// ```
     fn end(&self) -> Self::Addr;
+
+    /// Get CIDR that contains the range
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::net::Ipv4Addr;
+    /// use std::str::FromStr;
+    ///
+    /// use cidit::IpRange;
+    /// use cidit::Cidr;
+    /// use cidit::AddressRange;
+    /// use cidit::RangeMode;
+    ///
+    /// let mut range: IpRange = "10.0.0.10..10.0.0.20".parse().unwrap();
+    /// let expected_common_cidr: Cidr = Cidr::V4("10.0.0.0/27".parse().unwrap());
+    /// range.find_cidr(RangeMode::SmallestCommon);
+    ///
+    /// assert_eq!(range.cidrs(), Some(vec![expected_common_cidr]).as_deref());
+    /// ```
+    ///
+    /// # Requires find_cidr
+    ///
+    /// Returns None if find_cidr never called
+    ///
+    /// ```
+    /// use std::net::Ipv4Addr;
+    /// use std::str::FromStr;
+    ///
+    /// use cidit::IpRange;
+    /// use cidit::Cidr;
+    /// use cidit::AddressRange;
+    /// use cidit::RangeMode;
+    ///
+    /// let range: IpRange = "10.0.0.10..10.0.0.20".parse().unwrap();
+    /// let expected_common_cidr: Cidr = Cidr::V4("10.0.0.0/27".parse().unwrap());
+    ///
+    /// assert_eq!(range.cidrs(), None);
+    /// ```
     fn cidrs(&self) -> Option<&[Cidr]>;
+
+    /// Find CIDR that contains the range and store it internally
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::net::Ipv4Addr;
+    /// use std::str::FromStr;
+    ///
+    /// use cidit::IpRange;
+    /// use cidit::Cidr;
+    /// use cidit::AddressRange;
+    /// use cidit::RangeMode;
+    ///
+    /// let mut range: IpRange = "10.0.0.10..10.0.0.20".parse().unwrap();
+    /// let expected_cidr_1: Cidr = Cidr::V4("10.0.0.10/31".parse().unwrap());
+    /// let expected_cidr_2: Cidr = Cidr::V4("10.0.0.12/30".parse().unwrap());
+    /// let expected_cidr_3: Cidr = Cidr::V4("10.0.0.16/30".parse().unwrap());
+    /// let expected_cidr_4: Cidr = Cidr::V4("10.0.0.20/32".parse().unwrap());
+    /// let expected_cidrs = Some(vec![
+    ///     expected_cidr_1,
+    ///     expected_cidr_2,
+    ///     expected_cidr_3,
+    ///     expected_cidr_4,
+    /// ]);
+    /// range.find_cidr(RangeMode::ExactFit);
+    ///
+    /// assert_eq!(range.cidrs(), expected_cidrs.as_deref());
+    /// ```
+    ///
+    /// # Overrides previous call
+    ///
+    /// Can be called multiple times
+    ///
+    /// ```
+    /// use std::net::Ipv4Addr;
+    /// use std::str::FromStr;
+    ///
+    /// use cidit::IpRange;
+    /// use cidit::Cidr;
+    /// use cidit::AddressRange;
+    /// use cidit::RangeMode;
+    ///
+    /// let mut range: IpRange = "10.0.0.10..10.0.0.20".parse().unwrap();
+    /// let expected_cidr_1: Cidr = Cidr::V4("10.0.0.10/31".parse().unwrap());
+    /// let expected_cidr_2: Cidr = Cidr::V4("10.0.0.12/30".parse().unwrap());
+    /// let expected_cidr_3: Cidr = Cidr::V4("10.0.0.16/30".parse().unwrap());
+    /// let expected_cidr_4: Cidr = Cidr::V4("10.0.0.20/32".parse().unwrap());
+    /// let expected_cidrs = Some(vec![
+    ///     expected_cidr_1,
+    ///     expected_cidr_2,
+    ///     expected_cidr_3,
+    ///     expected_cidr_4,
+    /// ]);
+    /// range.find_cidr(RangeMode::SmallestCommon);
+    /// range.find_cidr(RangeMode::ExactFit);
+    ///
+    /// assert_eq!(range.cidrs(), expected_cidrs.as_deref());
+    /// ```
     fn find_cidr(&mut self, mode: RangeMode) -> &mut Self;
 }
 
+/// Enum representing general IpRange.
+/// Contains IPv4 and IPv6 variants
 pub enum IpRange {
     V4(Ipv4Range),
     V6(Ipv6Range),
@@ -173,12 +304,38 @@ impl AddressRange for IpRange {
 
 #[cfg(test)]
 mod tests {
+    use crate::test_helpers;
+
     use super::*;
 
     const EXPECTED_IPV4_START_STR: &str = "10.22.135.144";
     const EXPECTED_IPV4_END_STR: &str = "10.22.135.255";
     const EXPECTED_IPV6_START_STR: &str = "2001:db8:1::ab9:c0a8:102";
     const EXPECTED_IPV6_END_STR: &str = "2001:db8:1::ab9:c0a8:ffff";
+
+    #[test]
+    fn test_range_parse_error_type() {
+        // Arrange
+        // Act
+        // Assert
+        test_helpers::assert_error::<RangeParseError>();
+    }
+
+    #[test]
+    fn test_range_mode_type() {
+        // Arrange
+        // Act
+        // Assert
+        test_helpers::assert_normal_type::<RangeMode>();
+    }
+
+    #[test]
+    fn test_ip_range_type() {
+        // Arrange
+        // Act
+        // Assert
+        test_helpers::assert_normal_type::<IpRange>();
+    }
 
     #[test]
     fn test_parse_ipv4_dots() {

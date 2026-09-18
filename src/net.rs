@@ -24,37 +24,145 @@ pub enum CidrParseError {
     },
 }
 
-/// General IpNetwork trait
+///  General operations over IP network
 pub trait IpNetwork {
     type Addr: Copy + PartialEq + PartialOrd + Debug + Display;
     type Bits: BitAnd + BitOr;
 
-    /// Address
+    /// Get address part
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::net::Ipv4Addr;
+    /// use std::str::FromStr;
+    ///
+    /// use cidit::Ipv4Cidr;
+    /// use cidit::IpNetwork;
+    ///
+    /// let ipv4_addr = Ipv4Addr::from_str("10.22.135.144").unwrap();
+    /// let ipv4_cidr: Ipv4Cidr = "10.22.135.144/24".parse().unwrap();
+    ///
+    /// assert_eq!(ipv4_cidr.address(), ipv4_addr);
+    /// ```
     fn address(&self) -> Self::Addr;
 
-    /// Prefix length
+    /// Get prefix length
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::net::Ipv4Addr;
+    ///
+    /// use cidit::Ipv4Cidr;
+    /// use cidit::IpNetwork;
+    ///
+    /// let prefix: u8 = 24;
+    /// let ipv4_cidr: Ipv4Cidr = "10.22.135.144/24".parse().unwrap();
+    ///
+    /// assert_eq!(ipv4_cidr.prefix_len(), prefix);
+    /// ```
     fn prefix_len(&self) -> u8;
 
-    /// Network mask bits
+    /// Get network mask as bits
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use cidit::Ipv4Cidr;
+    /// use cidit::IpNetwork;
+    ///
+    /// let ipv4_cidr: Ipv4Cidr = "10.22.135.144/24".parse().unwrap();
+    ///
+    /// assert_eq!(ipv4_cidr.netmask_bits(), 0b11111111_11111111_11111111_00000000);
+    /// ```
     fn netmask_bits(&self) -> Self::Bits;
 
-    /// Network mask address
+    /// Get network mask as IP address
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::net::Ipv4Addr;
+    /// use std::str::FromStr;
+    ///
+    /// use cidit::Ipv4Cidr;
+    /// use cidit::IpNetwork;
+    ///
+    /// let ipv4_cidr: Ipv4Cidr = "10.22.135.144/24".parse().unwrap();
+    ///
+    /// assert_eq!(ipv4_cidr.netmask(), Ipv4Addr::from_str("255.255.255.0").unwrap());
+    /// ```
     fn netmask(&self) -> Self::Addr;
 
-    /// Host mask bits
+    /// Get host mask as bits
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use cidit::Ipv4Cidr;
+    /// use cidit::IpNetwork;
+    ///
+    /// let ipv4_cidr: Ipv4Cidr = "10.22.135.144/24".parse().unwrap();
+    ///
+    /// assert_eq!(ipv4_cidr.hostmask_bits(), 0b00000000_00000000_00000000_11111111);
+    /// ```
     fn hostmask_bits(&self) -> Self::Bits;
 
-    /// Host mask address
+    /// Get host mask as IP address
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::net::Ipv4Addr;
+    /// use std::str::FromStr;
+    ///
+    /// use cidit::Ipv4Cidr;
+    /// use cidit::IpNetwork;
+    ///
+    /// let ipv4_cidr: Ipv4Cidr = "10.22.135.144/24".parse().unwrap();
+    ///
+    /// assert_eq!(ipv4_cidr.hostmask(), Ipv4Addr::from_str("0.0.0.255").unwrap());
+    /// ```
     fn hostmask(&self) -> Self::Addr;
 
-    /// First arithmetical address in a range
+    /// First arithmetical IP address in a range
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::net::Ipv4Addr;
+    /// use std::str::FromStr;
+    ///
+    /// use cidit::Ipv4Cidr;
+    /// use cidit::IpNetwork;
+    ///
+    /// let ipv4_cidr: Ipv4Cidr = "10.22.135.144/24".parse().unwrap();
+    ///
+    /// assert_eq!(ipv4_cidr.first_address(), Ipv4Addr::from_str("10.22.135.0").unwrap());
+    /// ```
     fn first_address(&self) -> Self::Addr;
 
-    /// Last arithmetical address in a range
+    /// Last arithmetical IP address in a range
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::net::Ipv4Addr;
+    /// use std::str::FromStr;
+    ///
+    /// use cidit::Ipv4Cidr;
+    /// use cidit::IpNetwork;
+    ///
+    /// let ipv4_cidr: Ipv4Cidr = "10.22.135.144/24".parse().unwrap();
+    ///
+    /// assert_eq!(ipv4_cidr.last_address(), Ipv4Addr::from_str("10.22.135.255").unwrap());
+    /// ```
     fn last_address(&self) -> Self::Addr;
 }
 
-/// Enum containing IPv4 and IPv6 variants
+/// Enum representing genetic CIDR block.
+/// Contains IPv4 and IPv6 variants
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum Cidr {
     V4(Ipv4Cidr),
@@ -158,6 +266,8 @@ impl IpNetwork for Cidr {
 
 #[cfg(test)]
 mod tests {
+    use crate::test_helpers;
+
     use super::*;
 
     const EXPECTED_IPV4_PREFIX: u8 = 24;
@@ -165,6 +275,22 @@ mod tests {
 
     const EXPECTED_IPV4_STR: &str = "10.22.135.144";
     const EXPECTED_IPV6_STR: &str = "2001:db8:1::ab9:c0a8:102";
+
+    #[test]
+    fn test_cidr_parse_error_type() {
+        // Arrange
+        // Act
+        // Assert
+        test_helpers::assert_error::<CidrParseError>();
+    }
+
+    #[test]
+    fn test_cidr_type() {
+        // Arrange
+        // Act
+        // Assert
+        test_helpers::assert_normal_type::<Cidr>();
+    }
 
     #[test]
     fn test_parse_ipv4_cidr() {

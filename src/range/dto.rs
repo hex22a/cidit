@@ -3,6 +3,8 @@ use tabled::Tabled;
 
 use crate::{AddressRange, IpNetwork, IpRange};
 
+/// Printable range inspection result.
+/// Represents details for both IPv4 and IPv6 ranges
 #[derive(Debug, Tabled, PartialEq)]
 #[tabled(rename_all = "SCREAMING_SNAKE_CASE")]
 pub struct RangeCombinedInfo {
@@ -14,6 +16,7 @@ pub struct RangeCombinedInfo {
     cidr_end: String,
 }
 
+/// Serializable range inspection result
 #[derive(Debug, PartialEq, Eq, Serialize)]
 pub struct RangeInfo {
     ip_version: &'static str,
@@ -96,12 +99,28 @@ impl From<IpRange> for Vec<RangeInfo> {
 mod tests {
     use std::net::{Ipv4Addr, Ipv6Addr};
 
-    use crate::{Ipv4Range, Ipv6Range, range::RangeMode};
+    use crate::{Ipv4Range, Ipv6Range, range::RangeMode, test_helpers};
 
     use super::*;
 
     const EXPECTED_IPV4_STR: &str = "10.0.0.0";
     const EXPECTED_IPV6_STR: &str = "2001:db8::";
+
+    #[test]
+    fn test_range_combined_info_type() {
+        // Arrange
+        // Act
+        // Assert
+        test_helpers::assert_normal_type::<RangeCombinedInfo>();
+    }
+
+    #[test]
+    fn test_range_info_type() {
+        // Arrange
+        // Act
+        // Assert
+        test_helpers::assert_normal_type::<RangeInfo>();
+    }
 
     #[test]
     fn test_cidrs_v4() {

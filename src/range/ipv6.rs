@@ -6,6 +6,7 @@ use crate::{
     range::{AddressRange, RangeMode},
 };
 
+/// Internal representation of IPv6 range
 pub struct Ipv6Range {
     start: Ipv6Addr,
     end: Ipv6Addr,
@@ -70,7 +71,17 @@ impl AddressRange for Ipv6Range {
 
 #[cfg(test)]
 mod tests {
+    use crate::test_helpers;
+
     use super::*;
+
+    #[test]
+    fn test_ipv6_range_type() {
+        // Arrange
+        // Act
+        // Assert
+        test_helpers::assert_normal_type::<Ipv6Range>();
+    }
 
     #[test]
     fn test_cidrs() {
