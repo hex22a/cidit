@@ -1,6 +1,7 @@
 use std::net::Ipv6Addr;
 
 use crate::{
+    Cidr,
     net::ipv6::Ipv6Cidr,
     range::{AddressRange, RangeMode},
 };
@@ -8,7 +9,7 @@ use crate::{
 pub struct Ipv6Range {
     start: Ipv6Addr,
     end: Ipv6Addr,
-    cidrs: Option<Vec<Ipv6Cidr>>,
+    cidrs: Option<Vec<Cidr>>,
 }
 
 impl Ipv6Range {
@@ -23,7 +24,6 @@ impl Ipv6Range {
 
 impl AddressRange for Ipv6Range {
     type Addr = Ipv6Addr;
-    type Net = Ipv6Cidr;
 
     fn start(&self) -> Ipv6Addr {
         self.start
@@ -33,21 +33,21 @@ impl AddressRange for Ipv6Range {
         self.end
     }
 
-    fn cidrs(&self) -> Option<&[Self::Net]> {
+    fn cidrs(&self) -> Option<&[Cidr]> {
         self.cidrs.as_deref()
     }
 
     fn find_cidr(&mut self, mode: RangeMode) -> &mut Self {
         match mode {
             RangeMode::ExactFit => {
-                self.cidrs = Some(super::exact_fit(
-                    self.start(),
-                    self.end(),
-                    128u8,
-                    |addr, prefix| {
+                self.cidrs = Some(
+                    super::exact_fit(self.start(), self.end(), 128u8, |addr, prefix| {
                         Ipv6Cidr::new(addr, prefix).expect("prefix is always less or equal to 128")
-                    },
-                ));
+                    })
+                    .into_iter()
+                    .map(Cidr::V6)
+                    .collect(),
+                );
             }
             RangeMode::SmallestCommon => {
                 let start = self.start.to_bits();
@@ -56,8 +56,10 @@ impl AddressRange for Ipv6Range {
                     start,
                     end,
                     |addr, prefix| {
-                        Ipv6Cidr::new(Ipv6Addr::from_bits(addr), prefix)
-                            .expect("prefix is always less or equal to 128")
+                        Cidr::V6(
+                            Ipv6Cidr::new(Ipv6Addr::from_bits(addr), prefix)
+                                .expect("prefix is always less or equal to 128"),
+                        )
                     },
                 )])
             }

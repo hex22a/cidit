@@ -26,7 +26,8 @@ pub struct RangeInfo {
 impl From<IpRange> for Vec<RangeCombinedInfo> {
     fn from(value: IpRange) -> Self {
         match value {
-            IpRange::V4 { range, cidrs } => cidrs
+            IpRange::V4(range) => range
+                .cidrs()
                 .into_iter()
                 .flatten()
                 .map(|cidr| RangeCombinedInfo {
@@ -39,7 +40,8 @@ impl From<IpRange> for Vec<RangeCombinedInfo> {
                 })
                 .collect(),
 
-            IpRange::V6 { range, cidrs } => cidrs
+            IpRange::V6(range) => range
+                .cidrs()
                 .into_iter()
                 .flatten()
                 .map(|cidr| RangeCombinedInfo {
@@ -58,7 +60,8 @@ impl From<IpRange> for Vec<RangeCombinedInfo> {
 impl From<IpRange> for Vec<RangeInfo> {
     fn from(value: IpRange) -> Self {
         match value {
-            IpRange::V4 { range, cidrs } => cidrs
+            IpRange::V4(range) => range
+                .cidrs()
                 .into_iter()
                 .flatten()
                 .map(|cidr| RangeInfo {
@@ -71,7 +74,8 @@ impl From<IpRange> for Vec<RangeInfo> {
                 })
                 .collect(),
 
-            IpRange::V6 { range, cidrs } => cidrs
+            IpRange::V6(range) => range
+                .cidrs()
                 .into_iter()
                 .flatten()
                 .map(|cidr| RangeInfo {
@@ -118,14 +122,11 @@ mod tests {
             cidr_end: expected_cidr_end,
         }];
 
-        let mut expected_range = IpRange::V4 {
-            range: Ipv4Range::new(expected_range_start, expected_range_end),
-            cidrs: None,
-        };
-        expected_range.find_cidr(RangeMode::SmallestCommon);
+        let mut range = IpRange::V4(Ipv4Range::new(expected_range_start, expected_range_end));
+        range.find_cidr(RangeMode::SmallestCommon);
 
         // Act
-        let actual_range_info: Vec<RangeCombinedInfo> = expected_range.into();
+        let actual_range_info: Vec<RangeCombinedInfo> = range.into();
 
         // Assert
         assert_eq!(actual_range_info, expected_range_info);
@@ -151,14 +152,11 @@ mod tests {
             cidr_end: expected_cidr_end,
         }];
 
-        let mut expected_range = IpRange::V6 {
-            range: Ipv6Range::new(expected_range_start, expected_range_end),
-            cidrs: None,
-        };
-        expected_range.find_cidr(RangeMode::SmallestCommon);
+        let mut range = IpRange::V6(Ipv6Range::new(expected_range_start, expected_range_end));
+        range.find_cidr(RangeMode::SmallestCommon);
 
         // Act
-        let actual_range_info: Vec<RangeCombinedInfo> = expected_range.into();
+        let actual_range_info: Vec<RangeCombinedInfo> = range.into();
 
         // Assert
         assert_eq!(actual_range_info, expected_range_info);
@@ -184,14 +182,11 @@ mod tests {
             cidr_end: expected_cidr_end,
         }];
 
-        let mut expected_range = IpRange::V4 {
-            range: Ipv4Range::new(expected_range_start, expected_range_end),
-            cidrs: None,
-        };
-        expected_range.find_cidr(RangeMode::SmallestCommon);
+        let mut range = IpRange::V4(Ipv4Range::new(expected_range_start, expected_range_end));
+        range.find_cidr(RangeMode::SmallestCommon);
 
         // Act
-        let actual_range_info: Vec<RangeInfo> = expected_range.into();
+        let actual_range_info: Vec<RangeInfo> = range.into();
 
         // Assert
         assert_eq!(actual_range_info, expected_range_info);
@@ -217,14 +212,11 @@ mod tests {
             cidr_end: expected_cidr_end,
         }];
 
-        let mut expected_range = IpRange::V6 {
-            range: Ipv6Range::new(expected_range_start, expected_range_end),
-            cidrs: None,
-        };
-        expected_range.find_cidr(RangeMode::SmallestCommon);
+        let mut range = IpRange::V6(Ipv6Range::new(expected_range_start, expected_range_end));
+        range.find_cidr(RangeMode::SmallestCommon);
 
         // Act
-        let actual_range_info: Vec<RangeInfo> = expected_range.into();
+        let actual_range_info: Vec<RangeInfo> = range.into();
 
         // Assert
         assert_eq!(actual_range_info, expected_range_info);

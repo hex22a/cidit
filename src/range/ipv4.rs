@@ -1,14 +1,14 @@
 use std::net::Ipv4Addr;
 
 use crate::{
-    Ipv4Cidr,
+    Cidr, Ipv4Cidr,
     range::{AddressRange, RangeMode},
 };
 
 pub struct Ipv4Range {
     start: Ipv4Addr,
     end: Ipv4Addr,
-    cidrs: Option<Vec<Ipv4Cidr>>,
+    cidrs: Option<Vec<Cidr>>,
 }
 
 impl Ipv4Range {
@@ -23,7 +23,6 @@ impl Ipv4Range {
 
 impl AddressRange for Ipv4Range {
     type Addr = Ipv4Addr;
-    type Net = Ipv4Cidr;
 
     fn start(&self) -> Ipv4Addr {
         self.start
@@ -33,21 +32,21 @@ impl AddressRange for Ipv4Range {
         self.end
     }
 
-    fn cidrs(&self) -> Option<&[Self::Net]> {
+    fn cidrs(&self) -> Option<&[Cidr]> {
         self.cidrs.as_deref()
     }
 
     fn find_cidr(&mut self, mode: RangeMode) -> &mut Self {
         match mode {
             RangeMode::ExactFit => {
-                self.cidrs = Some(super::exact_fit(
-                    self.start(),
-                    self.end(),
-                    32u8,
-                    |addr, prefix| {
+                self.cidrs = Some(
+                    super::exact_fit(self.start(), self.end(), 32u8, |addr, prefix| {
                         Ipv4Cidr::new(addr, prefix).expect("prefix is always less or equal to 32")
-                    },
-                ))
+                    })
+                    .into_iter()
+                    .map(Cidr::V4)
+                    .collect(),
+                )
             }
             RangeMode::SmallestCommon => {
                 let start = self.start.to_bits();
@@ -56,8 +55,10 @@ impl AddressRange for Ipv4Range {
                     start,
                     end,
                     |addr, prefix| {
-                        Ipv4Cidr::new(Ipv4Addr::from_bits(addr), prefix)
-                            .expect("prefix is always less or equal to 32")
+                        Cidr::V4(
+                            Ipv4Cidr::new(Ipv4Addr::from_bits(addr), prefix)
+                                .expect("prefix is always less or equal to 32"),
+                        )
                     },
                 )]);
             }
