@@ -103,6 +103,70 @@ mod tests {
     const EXPECTED_IPV6_STR: &str = "2001:db8::";
 
     #[test]
+    fn test_cidrs_v4() {
+        // Arrange
+        let expected_start = String::from("10.0.0.10").parse().unwrap();
+        let expected_end = String::from("10.0.0.20").parse().unwrap();
+        let expected_common_cidr = String::from("10.0.0.0/27").parse().unwrap();
+        let expected_cidrs = Some(vec![expected_common_cidr]);
+        let mut range = IpRange::V4(Ipv4Range::new(expected_start, expected_end));
+        range.find_cidr(RangeMode::SmallestCommon);
+
+        // Act
+        let actual_cidrs = range.cidrs();
+
+        // Assert
+        assert_eq!(actual_cidrs, expected_cidrs.as_deref());
+    }
+
+    #[test]
+    fn test_cidrs_v4_no_find_called() {
+        // Arrange
+        let expected_start = String::from("10.0.0.10").parse().unwrap();
+        let expected_end = String::from("10.0.0.20").parse().unwrap();
+        let expected_cidrs = None;
+        let range = IpRange::V4(Ipv4Range::new(expected_start, expected_end));
+
+        // Act
+        let actual_cidrs = range.cidrs();
+
+        // Assert
+        assert_eq!(actual_cidrs, expected_cidrs);
+    }
+
+    #[test]
+    fn test_cidrs_v6() {
+        // Arrange
+        let expected_start = String::from("2001:db8::10").parse().unwrap();
+        let expected_end = String::from("2001:db8::20").parse().unwrap();
+        let expected_common_cidr = String::from("2001:db8::/122").parse().unwrap();
+        let expected_cidrs = Some(vec![expected_common_cidr]);
+        let mut range = IpRange::V6(Ipv6Range::new(expected_start, expected_end));
+        range.find_cidr(RangeMode::SmallestCommon);
+
+        // Act
+        let actual_cidrs = range.cidrs();
+
+        // Assert
+        assert_eq!(actual_cidrs, expected_cidrs.as_deref());
+    }
+
+    #[test]
+    fn test_cidrs_v6_no_find_called() {
+        // Arrange
+        let expected_start = String::from("2001:db8::10").parse().unwrap();
+        let expected_end = String::from("2001:db8::20").parse().unwrap();
+        let expected_cidrs = None;
+        let range = IpRange::V6(Ipv6Range::new(expected_start, expected_end));
+
+        // Act
+        let actual_cidrs = range.cidrs();
+
+        // Assert
+        assert_eq!(actual_cidrs, expected_cidrs);
+    }
+
+    #[test]
     fn test_range_tabled_info_from_range_v4() {
         // Arrange
         let expected_range_start_string = String::from("10.0.0.10");

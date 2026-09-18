@@ -379,7 +379,7 @@ mod test {
     fn test_network_address() {
         // Arrange
         let expected_prefix_len: u8 = 64;
-        let expected_network_address = Ipv6Addr::from_str("2001:db8:1::").unwrap();
+        let expected_network_address = Some(Ipv6Addr::from_str("2001:db8:1::").unwrap());
         let expected_ipv6_cidr = Ipv6Cidr::new(
             EXPECTED_IPV6_STR.parse::<Ipv6Addr>().unwrap(),
             expected_prefix_len,
@@ -387,10 +387,64 @@ mod test {
         .unwrap();
 
         // Act
-        let actual_network_address = expected_ipv6_cidr.first_address();
+        let actual_network_address = expected_ipv6_cidr.network_address();
 
         // Assert
         assert_eq!(actual_network_address, expected_network_address);
+    }
+
+    #[test]
+    fn test_network_address_point_to_point() {
+        // Arrange
+        let expected_prefix_len: u8 = POINT_TO_POINT_CIDR_PREFIX_LEN;
+        let expected_network_address = None;
+        let expected_ipv6_cidr = Ipv6Cidr::new(
+            EXPECTED_IPV6_STR.parse::<Ipv6Addr>().unwrap(),
+            expected_prefix_len,
+        )
+        .unwrap();
+
+        // Act
+        let actual_network_address = expected_ipv6_cidr.network_address();
+
+        // Assert
+        assert_eq!(actual_network_address, expected_network_address);
+    }
+
+    #[test]
+    fn test_network_address_single_ip() {
+        // Arrange
+        let expected_prefix_len: u8 = 128;
+        let expected_network_address = None;
+        let expected_ipv6_cidr = Ipv6Cidr::new(
+            EXPECTED_IPV6_STR.parse::<Ipv6Addr>().unwrap(),
+            expected_prefix_len,
+        )
+        .unwrap();
+
+        // Act
+        let actual_network_address = expected_ipv6_cidr.network_address();
+
+        // Assert
+        assert_eq!(actual_network_address, expected_network_address);
+    }
+
+    #[test]
+    fn test_first_address() {
+        // Arrange
+        let expected_prefix_len: u8 = 64;
+        let expected_last_address = Ipv6Addr::from_str("2001:db8:1::").unwrap();
+        let expected_ipv6_cidr = Ipv6Cidr::new(
+            EXPECTED_IPV6_STR.parse::<Ipv6Addr>().unwrap(),
+            expected_prefix_len,
+        )
+        .unwrap();
+
+        // Act
+        let actual_last_address = expected_ipv6_cidr.first_address();
+
+        // Assert
+        assert_eq!(actual_last_address, expected_last_address);
     }
 
     #[test]

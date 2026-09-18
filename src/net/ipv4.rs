@@ -384,14 +384,51 @@ mod test {
         // Arrange
         let expected_prefix: u8 = 24;
         let expected_binary_address: u32 = 0b00001010_01011000_10000111_10010000;
-        let expected_network_address = Ipv4Addr::from_bits(0b00001010_01011000_10000111_00000000);
+        let expected_network_address =
+            Some(Ipv4Addr::from_bits(0b00001010_01011000_10000111_00000000));
         let expected_cidr = Ipv4Cidr {
             ip: Ipv4Addr::from_bits(expected_binary_address),
             prefix: expected_prefix,
         };
 
         // Act
-        let actual_network_address = Ipv4Network::network_address(&expected_cidr).unwrap();
+        let actual_network_address = expected_cidr.network_address();
+
+        // Assert
+        assert_eq!(actual_network_address, expected_network_address);
+    }
+
+    #[test]
+    fn test_network_address_point_to_point() {
+        // Arrange
+        let expected_prefix: u8 = POINT_TO_POINT_CIDR_PREFIX_LEN;
+        let expected_binary_address: u32 = 0b00001010_01011000_10000111_10010000;
+        let expected_network_address = None;
+        let expected_cidr = Ipv4Cidr {
+            ip: Ipv4Addr::from_bits(expected_binary_address),
+            prefix: expected_prefix,
+        };
+
+        // Act
+        let actual_network_address = expected_cidr.network_address();
+
+        // Assert
+        assert_eq!(actual_network_address, expected_network_address);
+    }
+
+    #[test]
+    fn test_network_address_single_ip() {
+        // Arrange
+        let expected_prefix: u8 = 32;
+        let expected_binary_address: u32 = 0b00001010_01011000_10000111_10010000;
+        let expected_network_address = None;
+        let expected_cidr = Ipv4Cidr {
+            ip: Ipv4Addr::from_bits(expected_binary_address),
+            prefix: expected_prefix,
+        };
+
+        // Act
+        let actual_network_address = expected_cidr.network_address();
 
         // Assert
         assert_eq!(actual_network_address, expected_network_address);
@@ -469,7 +506,7 @@ mod test {
     }
 
     #[test]
-    fn test_first_usable_rfc_3021() {
+    fn test_first_usable_point_to_point() {
         // Arrange
         let expected_prefix: u8 = 31;
         let expected_binary_address: u32 = 0b00001010_01011000_10000111_10010000;
@@ -523,7 +560,7 @@ mod test {
     }
 
     #[test]
-    fn test_last_usable_rfc_3021() {
+    fn test_last_usable_point_to_point() {
         // Arrange
         let expected_prefix: u8 = 31;
         let expected_binary_address: u32 = 0b00001010_01011000_10000111_10010000;

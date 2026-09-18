@@ -331,7 +331,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_invalid_ip_dots() {
+    fn test_parse_invalid_start_ip_dots() {
         // Arrange
         let expected_invalid_string: &str = "some..10.0.0.10";
 
@@ -343,7 +343,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_invalid_ip_dash() {
+    fn test_parse_invalid_start_ip_dash() {
         // Arrange
         let expected_invalid_string: &str = "some-10.0.0.10";
 
@@ -355,9 +355,45 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_invalid_ip_space() {
+    fn test_parse_invalid_start_ip_space() {
         // Arrange
         let expected_invalid_string: &str = "some 10.0.0.10";
+
+        // Act
+        let actual_result = expected_invalid_string.parse::<IpRange>();
+
+        // Assert
+        assert!(matches!(actual_result, Err(RangeParseError::IpParse(_))));
+    }
+
+    #[test]
+    fn test_parse_invalid_end_ip_dots() {
+        // Arrange
+        let expected_invalid_string: &str = "10.0.0.10..some";
+
+        // Act
+        let actual_result = expected_invalid_string.parse::<IpRange>();
+
+        // Assert
+        assert!(matches!(actual_result, Err(RangeParseError::IpParse(_))));
+    }
+
+    #[test]
+    fn test_parse_invalid_end_ip_dash() {
+        // Arrange
+        let expected_invalid_string: &str = "10.0.0.10-some";
+
+        // Act
+        let actual_result = expected_invalid_string.parse::<IpRange>();
+
+        // Assert
+        assert!(matches!(actual_result, Err(RangeParseError::IpParse(_))));
+    }
+
+    #[test]
+    fn test_parse_invalid_end_ip_space() {
+        // Arrange
+        let expected_invalid_string: &str = "10.0.0.10 some";
 
         // Act
         let actual_result = expected_invalid_string.parse::<IpRange>();
