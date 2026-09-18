@@ -28,7 +28,7 @@ struct Args {
     pretty: bool,
 
     /// Print table without header (only for --format=table)
-    #[arg(short = 'H', long, requires = "format")]
+    #[arg(short = 'H', long)]
     headless: bool,
 
     /// Get smallest CIDR that contains a given range

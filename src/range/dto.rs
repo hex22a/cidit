@@ -4,6 +4,7 @@ use tabled::Tabled;
 use crate::{AddressRange, IpNetwork, IpRange};
 
 #[derive(Debug, Tabled, PartialEq)]
+#[tabled(rename_all = "SCREAMING_SNAKE_CASE")]
 pub struct RangeCombinedInfo {
     ip_ver: &'static str,
     start: String,
@@ -16,8 +17,8 @@ pub struct RangeCombinedInfo {
 #[derive(Debug, PartialEq, Eq, Serialize)]
 pub struct RangeInfo {
     ip_version: &'static str,
-    start: String,
-    end: String,
+    range_start: String,
+    range_end: String,
     cidr: String,
     cidr_start: String,
     cidr_end: String,
@@ -66,8 +67,8 @@ impl From<IpRange> for Vec<RangeInfo> {
                 .flatten()
                 .map(|cidr| RangeInfo {
                     ip_version: "v4",
-                    start: range.start().to_string(),
-                    end: range.end().to_string(),
+                    range_start: range.start().to_string(),
+                    range_end: range.end().to_string(),
                     cidr: cidr.to_string(),
                     cidr_start: cidr.first_address().to_string(),
                     cidr_end: cidr.last_address().to_string(),
@@ -80,8 +81,8 @@ impl From<IpRange> for Vec<RangeInfo> {
                 .flatten()
                 .map(|cidr| RangeInfo {
                     ip_version: "v6",
-                    start: range.start().to_string(),
-                    end: range.end().to_string(),
+                    range_start: range.start().to_string(),
+                    range_end: range.end().to_string(),
                     cidr: cidr.to_string(),
                     cidr_start: cidr.first_address().to_string(),
                     cidr_end: cidr.last_address().to_string(),
@@ -239,8 +240,8 @@ mod tests {
         let expected_cidr_end: String = String::from("10.0.0.31");
         let expected_range_info = vec![RangeInfo {
             ip_version: "v4",
-            start: expected_range_start_string,
-            end: expected_range_end_string,
+            range_start: expected_range_start_string,
+            range_end: expected_range_end_string,
             cidr: expected_cidr_string,
             cidr_start: expected_cidr_start,
             cidr_end: expected_cidr_end,
@@ -269,8 +270,8 @@ mod tests {
         let expected_cidr_str: String = format!("{EXPECTED_IPV6_STR}/{expected_prefix_len}");
         let expected_range_info = vec![RangeInfo {
             ip_version: "v6",
-            start: expected_range_start_string,
-            end: expected_range_end_string,
+            range_start: expected_range_start_string,
+            range_end: expected_range_end_string,
             cidr: expected_cidr_str,
             cidr_start: expected_cidr_start,
             cidr_end: expected_cidr_end,

@@ -4,6 +4,7 @@ use tabled::Tabled;
 use crate::{Cidr, IpNetwork, Ipv4Network, Ipv6Network};
 
 #[derive(Debug, Tabled, Default, PartialEq)]
+#[tabled(rename_all = "SCREAMING_SNAKE_CASE")]
 pub struct CidrCombinedInfo {
     ip_ver: &'static str,
     cidr: String,
