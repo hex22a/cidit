@@ -138,7 +138,7 @@ parallel cidit -H ::: 10.122.33.44/24 10.255.55.66/20 2001:db8:1::ab9:c0a8:102/6
 echo 10.122.33.44/24 10.255.55.66/20 2001:db8:1::ab9:c0a8:102/64 | xargs -n 1 -P0 cidit -H
 ```
 
-> _Note:_ It performs best used with `--format ndjson` option
+> _Note:_ It performs best with `--format ndjson` option
 > as ndjson mode is lazy and uses **O(1)** memory
 
 ```bash
